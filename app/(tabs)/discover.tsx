@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { MOCK_RECIPES, CATEGORIES } from '@/constants/mockRecipes';
-import { Colors, FontSize, FontWeight, Radius, IconSize } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius, IconSize } from '@/constants/tokens';
 import SwipeStack from '@/components/SwipeStack';
 import CategoryFilter from '@/components/CategoryFilter';
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
@@ -112,10 +112,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 6,
   },
 
   appName: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.titlePage,
     fontWeight: FontWeight.bold,
     color: Colors.accent,
@@ -135,6 +136,7 @@ const styles = StyleSheet.create({
   },
 
   savedBadgeText: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.bodySmall,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,

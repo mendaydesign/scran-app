@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { usePantry } from '@/context/PantryContext';
-import { Colors, FontSize, FontWeight, Radius, Stroke } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius, Stroke } from '@/constants/tokens';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -185,6 +185,7 @@ const styles = StyleSheet.create({
   },
 
   screenTitle: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.titlePage,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -192,6 +193,7 @@ const styles = StyleSheet.create({
   },
 
   countLabel: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.textSecondary,
   },
@@ -232,6 +234,7 @@ const styles = StyleSheet.create({
   },
 
   addButtonText: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.bodyBase,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -257,12 +260,14 @@ const styles = StyleSheet.create({
   },
 
   toggleTitle: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.bodyBase,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
   },
 
   toggleSubtitle: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodySmall,
     color: Colors.textSecondary,
     lineHeight: FontSize.bodySmall * 1.4,
@@ -279,6 +284,7 @@ const styles = StyleSheet.create({
   },
 
   emptyTitle: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.subheading,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -286,6 +292,7 @@ const styles = StyleSheet.create({
   },
 
   emptySubtitle: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -316,6 +323,7 @@ const styles = StyleSheet.create({
   },
 
   ingredientText: {
+    fontFamily: FontFamily.body,
     flex: 1,
     fontSize: FontSize.bodyBase,
     color: Colors.textPrimary,
@@ -335,6 +343,7 @@ const styles = StyleSheet.create({
   },
 
   clearButtonText: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.textSecondary,
   },

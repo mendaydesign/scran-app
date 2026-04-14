@@ -53,7 +53,8 @@
 
 ### Typography
 
-> **Font family:** [REPLACE WITH YOUR FONT NAME FROM FIGMA]
+> **Heading font:** Clash Grotesk Bold (`ClashGrotesk-Bold`) — Title Hero, Title Page, Subtitle, Heading, Subheading
+> **Body font:** NeueHaasDisplay-Light (`NeueHaasDisplay-Light`) — Body Base, Body Strong, Body Emphasis, Body Link, Body Small, Body Code
 
 | Token | Size (px) | Line Height (%) | Usage |
 |-------|-----------|-----------------|-------|

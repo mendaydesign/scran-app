@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { MOCK_RECIPES } from '@/constants/mockRecipes';
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
-import { Colors, FontSize, FontWeight, Radius, Stroke } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius, Stroke } from '@/constants/tokens';
 import type { Difficulty } from '@/types/recipe';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export default function RecipeDetail() {
         {/* Hero image */}
         <View style={styles.hero}>
           <Image
-            source={{ uri: recipe.imageUrl }}
+            source={recipe.imageUrl}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
           />
@@ -197,6 +197,7 @@ const styles = StyleSheet.create({
   },
 
   recipeTitle: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.subtitle,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -225,12 +226,14 @@ const styles = StyleSheet.create({
   },
 
   badgeText: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodySmall,
     color: Colors.textSecondary,
   },
 
   // ── Description ───────────────────────────────────────────────────────────
   description: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.textSecondary,
     lineHeight: FontSize.bodyBase * 1.5,
@@ -245,6 +248,7 @@ const styles = StyleSheet.create({
 
   // ── Sections ──────────────────────────────────────────────────────────────
   sectionTitle: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.heading,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -269,6 +273,7 @@ const styles = StyleSheet.create({
   },
 
   bodyText: {
+    fontFamily: FontFamily.body,
     flex: 1,
     fontSize: FontSize.bodyBase,
     color: Colors.textPrimary,
@@ -295,6 +300,7 @@ const styles = StyleSheet.create({
   },
 
   stepNumber: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.bodySmall,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -321,6 +327,7 @@ const styles = StyleSheet.create({
 
   // ── Error state ───────────────────────────────────────────────────────────
   errorText: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.textSecondary,
   },
@@ -330,6 +337,7 @@ const styles = StyleSheet.create({
   },
 
   errorBackText: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.accent,
   },

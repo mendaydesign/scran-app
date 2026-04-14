@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { Recipe, Difficulty } from '@/types/recipe';
 import {
   Colors,
+  FontFamily,
   FontSize,
   FontWeight,
   LineHeight,
@@ -92,7 +93,7 @@ export default function RecipeCard({
     <View style={styles.card}>
       {/* Full-bleed recipe image */}
       <Image
-        source={{ uri: recipe.imageUrl }}
+        source={recipe.imageUrl}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
         transition={200}
@@ -176,6 +177,7 @@ const styles = StyleSheet.create({
   },
 
   title: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.heading,
     lineHeight: FontSize.heading * LineHeight.heading,
     fontWeight: FontWeight.bold,
@@ -201,6 +203,7 @@ const styles = StyleSheet.create({
   },
 
   badgeText: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodySmall,
     lineHeight: FontSize.bodySmall * LineHeight.tight,
     fontWeight: FontWeight.regular,
@@ -220,6 +223,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   likeLabelText: {
+    fontFamily: FontFamily.heading,
     fontSize: 28,
     fontWeight: FontWeight.bold,
     color: '#4CAF50',
@@ -239,6 +243,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   nopeLabelText: {
+    fontFamily: FontFamily.heading,
     fontSize: 28,
     fontWeight: FontWeight.bold,
     color: '#FF4444',

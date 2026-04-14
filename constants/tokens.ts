@@ -7,6 +7,12 @@
 // Typography
 // ---------------------------------------------------------------------------
 
+// Font family names must match the keys passed to useFonts() in app/_layout.tsx
+export const FontFamily = {
+  heading: 'ClashGrotesk-Bold',       // Used for: Title Hero, Title Page, Subtitle, Heading, Subheading
+  body:    'NeueHaasDisplay-Light',   // Used for: Body Base, Body Strong, Body Emphasis, Body Link, Body Small, Body Code
+} as const;
+
 export const FontSize = {
   titleHero: 72,
   titlePage: 48,

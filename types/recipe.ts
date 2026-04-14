@@ -7,7 +7,7 @@ export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export interface Recipe {
   id: string;
   title: string;
-  imageUrl: string;        // generated at data layer — not in source JSON
+  imageUrl: string | number; // string = remote URI; number = local require() asset
   cookTime: number;        // total active cook time in minutes
   prepTime: number;        // prep time in minutes
   servings: number;

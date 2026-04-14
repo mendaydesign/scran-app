@@ -5,6 +5,7 @@
 import { ScrollView, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import {
   Colors,
+  FontFamily,
   FontSize,
   FontWeight,
   Radius,
@@ -89,6 +90,7 @@ const styles = StyleSheet.create({
   },
 
   chipText: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodySmall,
     // Single-line variant — line height = font size so the chip stays compact
     lineHeight: FontSize.bodySmall,

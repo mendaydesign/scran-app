@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
-import { Colors, FontSize, FontWeight, Radius } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
 import type { Recipe } from '@/types/recipe';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ function RecipeGridCard({
     >
       {/* Full-bleed image */}
       <Image
-        source={{ uri: recipe.imageUrl }}
+        source={recipe.imageUrl}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
         transition={200}
@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
   },
 
   screenTitle: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.titlePage,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -162,6 +163,7 @@ const styles = StyleSheet.create({
   },
 
   countLabel: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.textSecondary,
   },
@@ -177,6 +179,7 @@ const styles = StyleSheet.create({
   },
 
   emptyTitle: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.subheading,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -184,6 +187,7 @@ const styles = StyleSheet.create({
   },
 
   emptySubtitle: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -222,6 +226,7 @@ const styles = StyleSheet.create({
   },
 
   cardTitle: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.bodySmall,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -236,6 +241,7 @@ const styles = StyleSheet.create({
   },
 
   cardMetaText: {
+    fontFamily: FontFamily.body,
     fontSize: 12,
     color: Colors.textPrimary,
     opacity: 0.85,
