@@ -18,13 +18,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { usePantry } from '@/context/PantryContext';
-import { Colors, FontFamily, FontSize, FontWeight, Radius, Stroke } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function PantryScreen() {
   const { pantryItems, addItem, removeItem, clearPantry, matchBadgeEnabled, toggleMatchBadge } = usePantry();
   const [inputText, setInputText] = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
 
   const handleAdd = () => {
     const trimmed = inputText.trim();
@@ -56,10 +57,12 @@ export default function PantryScreen() {
         {/* ── Input row ───────────────────────────────────────────────────── */}
         <View style={styles.inputRow}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, inputFocused && styles.inputFocused]}
             value={inputText}
             onChangeText={setInputText}
             onSubmitEditing={handleAdd}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             placeholder="e.g. garlic, olive oil, pasta…"
             placeholderTextColor={Colors.textSecondary}
             returnKeyType="done"
@@ -203,30 +206,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
 
+  // No border by default — bottom 2px line activates on focus (primary green)
   input: {
     flex: 1,
-    height: 48,
+    height: 52,
     backgroundColor: Colors.surface,
     borderRadius: Radius.r200,
-    borderWidth: Stroke.border,
-    borderColor: Colors.border,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     fontSize: FontSize.bodyBase,
+    fontFamily: FontFamily.body,
     color: Colors.textPrimary,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+
+  inputFocused: {
+    borderBottomColor: Colors.primary,
   },
 
   addButton: {
-    height: 48,
-    paddingHorizontal: 20,
-    borderRadius: Radius.r200,
-    backgroundColor: Colors.accent,
+    height: 52,
+    paddingHorizontal: 24,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 64,
+    minWidth: 72,
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
 
   addButtonDisabled: {
@@ -237,20 +251,20 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.heading,
     fontSize: FontSize.bodyBase,
     fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
+    color: Colors.onPrimary,
   },
 
-  // ── Match badge toggle ────────────────────────────────────────────────────
+  // ── Match badge toggle — sits on surface for tonal separation ────────────
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginHorizontal: 0,
-    borderTopWidth: Stroke.border,
-    borderBottomWidth: Stroke.border,
-    borderColor: Colors.border,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.r400,
     gap: 12,
   },
 
@@ -299,26 +313,29 @@ const styles = StyleSheet.create({
     lineHeight: FontSize.bodyBase * 1.4,
   },
 
-  // ── Ingredient list ───────────────────────────────────────────────────────
+  // ── Ingredient list — sits on surfaceHigh for tonal lift off the page ──────
   list: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
+    marginHorizontal: 20,
+    marginTop: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.r400,
   },
 
   ingredientRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: Stroke.border,
-    borderBottomColor: Colors.border,
+    paddingVertical: 14,
   },
 
   bullet: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.primary,
     flexShrink: 0,
   },
 
@@ -332,12 +349,11 @@ const styles = StyleSheet.create({
   // ── Clear all button ──────────────────────────────────────────────────────
   clearButton: {
     alignSelf: 'center',
-    marginVertical: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+    marginVertical: 20,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
     borderRadius: Radius.full,
-    borderWidth: Stroke.border,
-    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceHigh,
     minHeight: 44,
     justifyContent: 'center',
   },

@@ -29,7 +29,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 
 import type { Recipe } from '@/types/recipe';
-import { Colors, FontSize, FontWeight, Radius } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
 import RecipeCard from './RecipeCard';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -367,12 +367,21 @@ const styles = StyleSheet.create({
   },
 
   // Each card absolutely fills the container; z-order comes from render order.
+  // Shadow lives here (not inside RecipeCard) because overflow:hidden on the
+  // card clips shadows — the parent must be shadow-owner.
   cardContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+    borderRadius: Radius.r400,
+    // Ambient shadow — 40–60px blur, 4–6% opacity, tinted not pure black
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.06,
+    shadowRadius: 28,
+    elevation: 6,
   },
 
   // ── Empty state ────────────────────────────────────────────────────────────
@@ -385,6 +394,7 @@ const styles = StyleSheet.create({
   },
 
   emptyTitle: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.subheading,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
@@ -392,6 +402,7 @@ const styles = StyleSheet.create({
   },
 
   emptySubtitle: {
+    fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -403,15 +414,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: Radius.full,
-    backgroundColor: Colors.accent,
-    // Ensure touch target meets the 44px minimum
+    backgroundColor: Colors.primary,
     minHeight: 44,
     justifyContent: 'center',
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
 
   resetButtonText: {
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.bodyBase,
     fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
+    color: Colors.onPrimary,
   },
 });

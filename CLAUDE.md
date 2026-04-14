@@ -51,6 +51,8 @@
 
 ## Design System — Follow These Tokens Exactly
 
+The visual direction is **"The Graphic Editorial"** — bold, fashion-forward, premium digital magazine aesthetic. See `DESIGN.md` for the full creative brief.
+
 ### Typography
 
 > **Heading font:** Clash Grotesk Bold (`ClashGrotesk-Bold`) — Title Hero, Title Page, Subtitle, Heading, Subheading
@@ -73,39 +75,113 @@
 
 **Single Line variants** (line height 100%): Use for labels, buttons, and chips where text must not wrap.
 
-### Border Radius
+### Colours
+
+The palette is a curated combination of deep forest green, warm off-white surfaces, punchy secondary pinks, and sharp tertiary yellows.
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| radius-100 | 4px | Subtle rounding — inputs, small elements |
-| radius-200 | 8px | Cards, containers |
-| radius-400 | 16px | Modals, larger elements |
-| radius-full | 9999px | Pills, circular buttons, tags |
+| `background` | `#fffcf6` | Level 1 — the canvas, page background |
+| `surface` | `#f6f3ed` | Level 2 — layout blocks, cards, chip backgrounds |
+| `surfaceHigh` | `#f0eee6` | Level 3 — nested modules, alternative sections |
+| `primary` | `#317055` | Deep forest green — buttons, active states, accent |
+| `primaryDim` | `#236349` | Pressed/hover variant of primary |
+| `onPrimary` | `#ffffff` | Text and icons placed on a primary background |
+| `secondary` | `#B0255A` | Vivid pink — interactive elements (e.g. nope button ring) |
+| `onSecondary` | `#ffffff` | Text on secondary background |
+| `secondaryContainer` | `#ffd7e4` | Soft pink container background |
+| `onSecondaryContainer` | `#3e001e` | Text on secondary container |
+| `tertiaryContainer` | `#f4e645` | Sharp yellow container background |
+| `onTertiaryContainer` | `#1f1c00` | Text on tertiary container |
+| `textPrimary` | `#383834` | Main readable text (on-surface) |
+| `textSecondary` | `#66635d` | Captions, metadata (on-surface-variant) |
+| `accent` | `#317055` | Alias for primary — kept for backwards compatibility |
+| `border` | `rgba(56, 56, 52, 0.15)` | Ghost border — accessibility fallback only, use sparingly |
+
+### Border Radius
+
+The signature shape language uses oversized rounding. Avoid `r100` and `r200` in main UI — stay within `r400` to `full`.
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `r100` | 4px | Micro elements only — avoid in main UI |
+| `r200` | 8px | Small rounding — inputs |
+| `r400` | 32px | lg (2rem) — cards, containers, section blocks |
+| `full` | 9999px | xl pills — chips, pill buttons, tags |
 
 ### Stroke
 
+Borders are **only** for interactive focus/active states. Never use them for sectioning or containment — use surface-tier colour shifts instead.
+
 | Token | Value | Usage |
 |-------|-------|-------|
-| border | 1px | Default borders |
-| focus-ring | 2px | Focus/active states |
+| `focusRing` | 2px | Focus/active states (e.g. focused input underline) |
+
+### Elevation & Depth
+
+Depth is achieved through **tonal layering** and **ambient shadows** — not divider lines or heavy drop shadows.
+
+**Tonal layering:** Stack `background` → `surface` → `surfaceHigh` to create natural lift between sections. A `surface` card on a `background` page needs no border — the colour shift defines the edge.
+
+**Ambient shadows** (use only on floating elements — cards, buttons, modals):
+- Blur: 40–60px (`shadowRadius: 20–28` in React Native)
+- Opacity: 4–8% (`shadowOpacity: 0.04–0.08`)
+- Colour: `#383834` (tinted on-surface) — never pure black
+- Android: `elevation: 3–6`
+
+**Shadow + overflow:hidden:** React Native clips shadows when a view has `overflow: 'hidden'`. Always apply the shadow to a *parent wrapper* view and put `overflow: 'hidden'` on the inner child.
 
 ### Blur
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| blur-100 | 4px | Subtle background blur |
+| `subtle` | 4px | Subtle background blur |
+| `glass` | 20px | Glassmorphism — floating headers/navigation overlays at 70% surface opacity |
 
 ### Icon Sizes
 
 | Token | Value |
 |-------|-------|
-| icon-small | 24px |
-| icon-medium | 32px |
-| icon-large | 40px |
+| `icon-small` | 24px |
+| `icon-medium` | 32px |
+| `icon-large` | 40px |
 
-### Colours
+---
 
-> [TODO: Add colour tokens from Figma design system when ready]
+## Component Guidelines
+
+### The "No-Line" Rule
+**Never use 1px solid borders for sectioning or containment.** Boundaries must be defined solely through background colour shifts. The only exceptions are:
+- `focusRing` (2px) on focused input fields
+- Decorative button rings (e.g. the nope button's secondary-coloured ring) — these are interactive design elements, not structural lines
+
+### Buttons
+- **Primary:** `primary` background (`#317055`), `onPrimary` text (`#ffffff`), `Radius.full` (pill shape), ambient shadow
+- **Secondary / Ghost:** `surface` or `surfaceHigh` background, `textPrimary` text, `Radius.full`
+- **Nope action button:** `background` fill with a 2px `secondary` coloured ring — decorative, communicates the action, not a structural border
+- Minimum touch target: 44px height
+
+### Chips & Filter Tags
+- Inactive: `surfaceHigh` background, `textSecondary` text, `Radius.full`, subtle ambient shadow
+- Active: `primary` background, `onPrimary` text, `Radius.full`, slightly stronger shadow
+- Horizontal padding: 20px minimum
+- Never use borders on chips
+
+### Input Fields
+- Background: `surface`
+- No border by default
+- On focus: 2px bottom-weighted line in `primary` colour (`borderBottomWidth: 2, borderBottomColor: Colors.primary`)
+- Use `onFocus`/`onBlur` state to toggle the active bottom line
+
+### Cards
+- Use `Radius.r400` (32px) for the editorial lg shape
+- Shadow wrapper pattern required (see Elevation section above)
+- No divider lines between sections — use `surface` vs `surfaceHigh` containers or 32–48px vertical spacing instead
+- Dark image overlays (`rgba(0,0,0,0.72)`) are acceptable on top of photos
+
+### Section Blocks
+- Wrap distinct content sections (e.g. Ingredients, Method) in rounded containers (`Radius.r400`) with `surface` or `surfaceHigh` backgrounds
+- Alternate between `surface` and `surfaceHigh` for adjacent sections to create tonal contrast without lines
 
 ---
 

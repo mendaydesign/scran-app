@@ -82,7 +82,7 @@ export default function DiscoverScreen() {
           accessibilityLabel="Skip this recipe"
           accessibilityRole="button"
         >
-          <Ionicons name="close" size={IconSize.medium} color="#FF4444" />
+          <Ionicons name="close" size={IconSize.medium} color={Colors.secondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -91,7 +91,7 @@ export default function DiscoverScreen() {
           accessibilityLabel="Save this recipe"
           accessibilityRole="button"
         >
-          <Ionicons name="heart" size={IconSize.medium} color="#4CAF50" />
+          <Ionicons name="heart" size={IconSize.medium} color={Colors.onPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -144,9 +144,9 @@ const styles = StyleSheet.create({
 
   stackContainer: {
     flex: 1,
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 12,
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 16,
   },
 
   actionRow: {
@@ -154,7 +154,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 48,
-    paddingBottom: 16,
+    paddingBottom: 24,
+    paddingTop: 8,
   },
 
   actionButton: {
@@ -163,15 +164,22 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
+    // Ambient shadow on both buttons for tonal lift
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
 
+  // Nope: white fill with secondary pink ring — decorative button style, not a sectioning border
   nopeButton: {
-    borderColor: '#FF4444',
+    backgroundColor: Colors.background,
+    borderWidth: 2,
+    borderColor: Colors.secondary,
   },
 
   likeButton: {
-    borderColor: '#4CAF50',
+    backgroundColor: Colors.primary,
   },
 });

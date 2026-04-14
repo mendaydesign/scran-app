@@ -45,34 +45,38 @@ function RecipeGridCard({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.85}
-      accessibilityLabel={`View ${recipe.title}`}
-      accessibilityRole="button"
-    >
-      {/* Full-bleed image */}
-      <Image
-        source={recipe.imageUrl}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-        transition={200}
-      />
+    // Shadow wrapper — overflow:hidden on the inner card clips shadows,
+    // so the ambient shadow must live on a parent with no overflow restriction.
+    <View style={styles.cardShadow}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={onPress}
+        activeOpacity={0.85}
+        accessibilityLabel={`View ${recipe.title}`}
+        accessibilityRole="button"
+      >
+        {/* Full-bleed image */}
+        <Image
+          source={recipe.imageUrl}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={200}
+        />
 
-      {/* Dark overlay + text at the bottom of the card */}
-      <View style={styles.cardOverlay}>
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {recipe.title}
-        </Text>
-        <View style={styles.cardMeta}>
-          <Ionicons name="time-outline" size={12} color={Colors.textPrimary} />
-          <Text style={styles.cardMetaText}>
-            {formatCookTime(recipe.cookTime)}
+        {/* Dark overlay + text at the bottom of the card */}
+        <View style={styles.cardOverlay}>
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {recipe.title}
           </Text>
+          <View style={styles.cardMeta}>
+            <Ionicons name="time-outline" size={12} color={Colors.textPrimary} />
+            <Text style={styles.cardMetaText}>
+              {formatCookTime(recipe.cookTime)}
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -197,7 +201,8 @@ const styles = StyleSheet.create({
   // ── Grid ──────────────────────────────────────────────────────────────────
   grid: {
     paddingHorizontal: SCREEN_PADDING,
-    paddingBottom: 24,
+    paddingTop: 8,
+    paddingBottom: 32,
     gap: CARD_GAP,
   },
 
@@ -206,10 +211,21 @@ const styles = StyleSheet.create({
   },
 
   // ── Grid card ─────────────────────────────────────────────────────────────
-  card: {
+  // Shadow wrapper: ambient shadow lives here (overflow:hidden below clips it)
+  cardShadow: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: Radius.r200,
+    borderRadius: Radius.r400,
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 4,
+  },
+
+  card: {
+    flex: 1,
+    borderRadius: Radius.r400,
     overflow: 'hidden',
     backgroundColor: Colors.surface,
   },

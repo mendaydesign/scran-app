@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { MOCK_RECIPES } from '@/constants/mockRecipes';
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
-import { Colors, FontFamily, FontSize, FontWeight, Radius, Stroke } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
 import type { Difficulty } from '@/types/recipe';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ export default function RecipeDetail() {
 
           {/* Metadata badges — wraps onto multiple lines if needed */}
           <View style={styles.badgeRow}>
-            <View style={[styles.badge, { borderColor: difficultyColor }]}>
+            <View style={styles.badge}>
               <Text style={[styles.badgeText, { color: difficultyColor }]}>
                 {recipe.difficulty}
               </Text>
@@ -104,29 +104,31 @@ export default function RecipeDetail() {
           {/* Description */}
           <Text style={styles.description}>{recipe.description}</Text>
 
-          <View style={styles.divider} />
+          <View style={{ height: 32 }} />
 
-          {/* ── Ingredients ─────────────────────────────────────────────── */}
-          <Text style={styles.sectionTitle}>Ingredients</Text>
-          {recipe.ingredients.map((ingredient, i) => (
-            <View key={i} style={styles.ingredientRow}>
-              <View style={styles.bullet} />
-              <Text style={styles.bodyText}>{ingredient}</Text>
-            </View>
-          ))}
-
-          <View style={styles.divider} />
-
-          {/* ── Method ──────────────────────────────────────────────────── */}
-          <Text style={styles.sectionTitle}>Method</Text>
-          {recipe.steps.map((step, i) => (
-            <View key={i} style={styles.stepRow}>
-              <View style={styles.stepBadge}>
-                <Text style={styles.stepNumber}>{i + 1}</Text>
+          {/* ── Ingredients — sits on surface for tonal lift ─────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Ingredients</Text>
+            {recipe.ingredients.map((ingredient, i) => (
+              <View key={i} style={styles.ingredientRow}>
+                <View style={styles.bullet} />
+                <Text style={styles.bodyText}>{ingredient}</Text>
               </View>
-              <Text style={styles.bodyText}>{step}</Text>
-            </View>
-          ))}
+            ))}
+          </View>
+
+          {/* ── Method — sits on surfaceHigh for contrast vs ingredients ─ */}
+          <View style={[styles.section, styles.sectionAlt]}>
+            <Text style={styles.sectionTitle}>Method</Text>
+            {recipe.steps.map((step, i) => (
+              <View key={i} style={styles.stepRow}>
+                <View style={styles.stepBadge}>
+                  <Text style={styles.stepNumber}>{i + 1}</Text>
+                </View>
+                <Text style={styles.bodyText}>{step}</Text>
+              </View>
+            ))}
+          </View>
 
           {/* Bottom breathing room */}
           <View style={{ height: 48 }} />
@@ -193,7 +195,7 @@ const styles = StyleSheet.create({
   // ── Content ───────────────────────────────────────────────────────────────
   content: {
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 28,
   },
 
   recipeTitle: {
@@ -220,8 +222,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: Radius.full,
-    borderWidth: Stroke.border,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
     backgroundColor: Colors.surface,
   },
 
@@ -240,19 +240,26 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
-  divider: {
-    height: Stroke.border,
-    backgroundColor: Colors.border,
-    marginBottom: 20,
+  // ── Sections — tonal containers for depth without dividers ───────────────
+  section: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.r400,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+    marginBottom: 16,
   },
 
-  // ── Sections ──────────────────────────────────────────────────────────────
+  sectionAlt: {
+    backgroundColor: Colors.surfaceHigh,
+  },
+
   sectionTitle: {
     fontFamily: FontFamily.heading,
     fontSize: FontSize.heading,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
-    marginBottom: 14,
+    marginBottom: 16,
   },
 
   // ── Ingredients ───────────────────────────────────────────────────────────
@@ -260,14 +267,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    marginBottom: 8,
+    marginBottom: 10,
   },
 
   bullet: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.primary,
     marginTop: 9, // aligns with the cap-height of bodyBase text
     flexShrink: 0,
   },
@@ -292,7 +299,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -303,7 +310,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.heading,
     fontSize: FontSize.bodySmall,
     fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
+    color: Colors.onPrimary,
   },
 
   // ── Floating buttons (back + save) ────────────────────────────────────────

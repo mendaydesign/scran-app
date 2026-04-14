@@ -121,7 +121,7 @@ export default function RecipeCard({
           </View>
 
           {/* Difficulty */}
-          <View style={[styles.badge, { borderColor: difficultyColor }]}>
+          <View style={styles.badge}>
             <Text style={[styles.badgeText, { color: difficultyColor }]}>
               {recipe.difficulty}
             </Text>
@@ -131,7 +131,7 @@ export default function RecipeCard({
           {matchBadge && (() => {
             const color = matchColor(matchBadge.matched, matchBadge.total);
             return (
-              <View style={[styles.badge, { borderColor: color }]}>
+              <View style={styles.badge}>
                 <Ionicons name="basket-outline" size={14} color={color} />
                 <Text style={[styles.badgeText, { color }]}>
                   {matchBadge.matched}/{matchBadge.total}
@@ -197,8 +197,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
 

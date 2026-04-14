@@ -9,7 +9,6 @@ import {
   FontSize,
   FontWeight,
   Radius,
-  Stroke,
 } from '@/constants/tokens';
 
 interface CategoryFilterProps {
@@ -71,22 +70,28 @@ const styles = StyleSheet.create({
   },
 
   chip: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: Radius.full,
-    borderWidth: Stroke.border,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-    // Ensure the touch target meets the 44px minimum even for short labels
+    // surfaceHigh gives tonal lift off the background without any border
+    backgroundColor: Colors.surfaceHigh,
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    // Ambient shadow — tonal lift, very subtle
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
 
-  // Active chip uses the accent colour for both background and border
+  // Active chip: primary green background, no border
   chipActive: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
+    backgroundColor: Colors.primary,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
 
   chipText: {
@@ -100,6 +105,6 @@ const styles = StyleSheet.create({
 
   chipTextActive: {
     fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
+    color: Colors.onPrimary,
   },
 });
