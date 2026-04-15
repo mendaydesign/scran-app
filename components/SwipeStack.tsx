@@ -376,12 +376,15 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: Radius.r400,
-    // Ambient shadow — 40–60px blur, 4–6% opacity, tinted not pure black
+    // backgroundColor is required on iOS for shadows to render —
+    // a view with no background colour casts no shadow.
+    backgroundColor: '#fffcf6',
+    // Ambient shadow — tinted, not pure black, barely perceptible
     shadowColor: '#383834',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.06,
-    shadowRadius: 28,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.10,
+    shadowRadius: 32,
+    elevation: 8,
   },
 
   // ── Empty state ────────────────────────────────────────────────────────────

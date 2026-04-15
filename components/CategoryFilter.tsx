@@ -78,12 +78,12 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    // Ambient shadow — tonal lift, very subtle
+    // Ambient shadow — just enough to lift chips off the background
     shadowColor: '#383834',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   // Active chip: primary green background, no border
