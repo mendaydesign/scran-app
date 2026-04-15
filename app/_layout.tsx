@@ -20,8 +20,9 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    'ClashGrotesk-Bold':      require('../assets/ClashGrotesk-Bold.otf'),
-    'NeueHaasDisplay-Light':  require('../assets/NeueHaasDisplayLight.ttf'),
+    'ClashGrotesk-Bold':      require('../assets/fonts/ClashGrotesk-Bold.otf'),
+    'ClashGrotesk-Semibold':  require('../assets/fonts/ClashGrotesk-Semibold.otf'),
+    'NeueHaasDisplay-Light':  require('../assets/fonts/NeueHaasDisplayLight.ttf'),
   });
 
   useEffect(() => {

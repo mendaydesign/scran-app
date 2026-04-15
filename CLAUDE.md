@@ -40,12 +40,13 @@
 
 ## Tech Stack
 
-- **Framework:** React Native with Expo (for cross-platform mobile)
+- **Framework:** React Native with Expo SDK 54 (for cross-platform mobile)
 - **Language:** TypeScript
 - **Styling:** Use the design system tokens defined below — keep styling inline or in StyleSheet.create()
-- **Navigation:** Expo Router or React Navigation
+- **Navigation:** Expo Router (file-based routing)
 - **State management:** Keep it simple — React useState/useContext. No Redux.
 - **Data:** Local JSON files for MVP. No backend database needed yet.
+- **Key installed packages:** `expo-image`, `expo-linear-gradient`, `expo-blur`, `react-native-reanimated`, `react-native-gesture-handler`
 
 ---
 
@@ -56,7 +57,10 @@ The visual direction is **"The Graphic Editorial"** — bold, fashion-forward, p
 ### Typography
 
 > **Heading font:** Clash Grotesk Bold (`ClashGrotesk-Bold`) — Title Hero, Title Page, Subtitle, Heading, Subheading
+> **Heading Semibold font:** Clash Grotesk Semibold (`ClashGrotesk-Semibold`) — Medium-weight headings, filter chip labels (inactive), badge pill labels
 > **Body font:** NeueHaasDisplay-Light (`NeueHaasDisplay-Light`) — Body Base, Body Strong, Body Emphasis, Body Link, Body Small, Body Code
+
+Font files live in `assets/fonts/`. All three are registered in `app/_layout.tsx` via `useFonts` and exposed as `FontFamily.heading`, `FontFamily.headingSemibold`, and `FontFamily.body` in `constants/tokens.ts`.
 
 | Token | Size (px) | Line Height (%) | Usage |
 |-------|-----------|-----------------|-------|
@@ -74,6 +78,8 @@ The visual direction is **"The Graphic Editorial"** — bold, fashion-forward, p
 | Body Code | 16 | 130% | Code or monospaced text |
 
 **Single Line variants** (line height 100%): Use for labels, buttons, and chips where text must not wrap.
+
+**Negative letter spacing in React Native:** RN applies `letterSpacing` as trailing space after every character including the last, so negative values clip the final glyph. Fix by adding `paddingRight` equal to the absolute value of the letter spacing on the `Text` element (e.g. `letterSpacing: -4.8` requires `paddingRight: 4.8`).
 
 ### Colours
 
@@ -124,12 +130,14 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
 **Tonal layering:** Stack `background` → `surface` → `surfaceHigh` to create natural lift between sections. A `surface` card on a `background` page needs no border — the colour shift defines the edge.
 
 **Ambient shadows** (use only on floating elements — cards, buttons, modals):
-- Blur: 40–60px (`shadowRadius: 20–28` in React Native)
-- Opacity: 4–8% (`shadowOpacity: 0.04–0.08`)
 - Colour: `#383834` (tinted on-surface) — never pure black
-- Android: `elevation: 3–6`
+- Swipe cards: `shadowOpacity: 0.10`, `shadowRadius: 32`, `offset: { width: 0, height: 20 }`, `elevation: 8`
+- Action buttons: `shadowOpacity: 0.12`, `shadowRadius: 20`, `offset: { width: 0, height: 6 }`, `elevation: 6`
+- Filter chips: `shadowOpacity: 0.08`, `shadowRadius: 8`, `offset: { width: 0, height: 2 }`, `elevation: 2`
 
-**Shadow + overflow:hidden:** React Native clips shadows when a view has `overflow: 'hidden'`. Always apply the shadow to a *parent wrapper* view and put `overflow: 'hidden'` on the inner child.
+**Critical iOS rule — `backgroundColor` is required for shadows:**  iOS only renders a shadow on a view that has a solid `backgroundColor`. A view with `backgroundColor: 'transparent'` or no background colour will cast no shadow regardless of shadow props. Always set a background colour on the shadow-owning view.
+
+**Shadow + overflow:hidden:** React Native clips shadows when a view has `overflow: 'hidden'`. Always apply the shadow to a *parent wrapper* view and put `overflow: 'hidden'` on the inner child. The wrapper owns the shadow and `borderRadius`; the inner view owns `overflow: 'hidden'` for image/content clipping.
 
 ### Blur
 
@@ -137,6 +145,8 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
 |-------|-------|-------|
 | `subtle` | 4px | Subtle background blur |
 | `glass` | 20px | Glassmorphism — floating headers/navigation overlays at 70% surface opacity |
+
+**Glassmorphism implementation** (e.g. recipe card badges): use `BlurView` from `expo-blur` as the container instead of a plain `View`. Set `intensity={60}`, `tint="light"`, `backgroundColor: 'rgba(255,255,255,0.30)'`, and `borderWidth: 1, borderColor: 'rgba(255,255,255,0.30)'` on the style. Always add `overflow: 'hidden'` to the `BlurView` style so `borderRadius` clips the blur correctly.
 
 ### Icon Sizes
 
@@ -154,18 +164,20 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
 **Never use 1px solid borders for sectioning or containment.** Boundaries must be defined solely through background colour shifts. The only exceptions are:
 - `focusRing` (2px) on focused input fields
 - Decorative button rings (e.g. the nope button's secondary-coloured ring) — these are interactive design elements, not structural lines
+- Inactive filter chips — 1px `Colors.primary` stroke that communicates interactivity
+- Glassmorphism badge pills — 1px `rgba(255,255,255,0.30)` stroke to define the pill edge against the image
 
 ### Buttons
 - **Primary:** `primary` background (`#317055`), `onPrimary` text (`#ffffff`), `Radius.full` (pill shape), ambient shadow
 - **Secondary / Ghost:** `surface` or `surfaceHigh` background, `textPrimary` text, `Radius.full`
-- **Nope action button:** `background` fill with a 2px `secondary` coloured ring — decorative, communicates the action, not a structural border
+- **Nope action button:** 72×72px circle, `background` fill with a 2px `secondary` coloured ring, `secondary` coloured icon — decorative ring communicates the action, not a structural border
+- **Like action button:** 72×72px circle, `primary` background, `onPrimary` (white) heart icon
 - Minimum touch target: 44px height
 
 ### Chips & Filter Tags
-- Inactive: `surfaceHigh` background, `textSecondary` text, `Radius.full`, subtle ambient shadow
-- Active: `primary` background, `onPrimary` text, `Radius.full`, slightly stronger shadow
+- **Inactive:** transparent fill, 1px `Colors.primary` stroke (`borderWidth: 1, borderColor: Colors.primary`), `Colors.primary` text, `FontFamily.headingSemibold`, `Radius.full`, subtle ambient shadow (`shadowOpacity: 0.08`)
+- **Active:** solid `Colors.primary` fill, no border (`borderWidth: 0`), `Colors.onPrimary` (white) text, `FontFamily.heading` (ClashGrotesk-Bold), `Radius.full`, slightly stronger shadow
 - Horizontal padding: 20px minimum
-- Never use borders on chips
 
 ### Input Fields
 - Background: `surface`
@@ -173,11 +185,25 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
 - On focus: 2px bottom-weighted line in `primary` colour (`borderBottomWidth: 2, borderBottomColor: Colors.primary`)
 - Use `onFocus`/`onBlur` state to toggle the active bottom line
 
-### Cards
-- Use `Radius.r400` (32px) for the editorial lg shape
-- Shadow wrapper pattern required (see Elevation section above)
+### Recipe Cards (swipe + grid)
+- Shape: `Radius.r400` (32px), `overflow: 'hidden'` on inner card, shadow on outer wrapper (see Elevation rules)
+- **Image overlay:** `LinearGradient` from `expo-linear-gradient`, not a plain dark `View`
+  - Colour: `#004B33` (deep forest green)
+  - Stops: `['rgba(0,75,51,0)', 'rgba(0,75,51,0.40)', 'rgba(0,75,51,0.95)']`
+  - Locations: `[0, 0.6, 1]` — transparent at top, 40% opacity at 60% down, 95% at bottom
+  - Direction: `start={{ x:0, y:0 }}` → `end={{ x:0, y:1 }}`
+- **Card title:** uppercase (`toUpperCase()`), `fontSize: 36`, `fontWeight: bold`, `ClashGrotesk-Bold`, white (`#ffffff`), `lineHeight: 36 * 1.1`
+- **Metadata badges:** glassmorphism — `BlurView` with `intensity={60}`, `tint="light"`, `backgroundColor: 'rgba(255,255,255,0.30)'`, `borderWidth: 1`, `borderColor: 'rgba(255,255,255,0.30)'`, `overflow: 'hidden'`, `Radius.full`. Font: `FontFamily.headingSemibold` at `fontSize: 12`. White icons and text. Never solid-coloured backgrounds on image overlay badges.
 - No divider lines between sections — use `surface` vs `surfaceHigh` containers or 32–48px vertical spacing instead
-- Dark image overlays (`rgba(0,0,0,0.72)`) are acceptable on top of photos
+
+### Tab Bar
+- Background: `Colors.surface`
+- Labels: hidden (`tabBarShowLabel: false`)
+- Active tab: solid `Colors.primary` circle (44×44px, `borderRadius: 22`) behind the icon, white icon
+- Inactive tab: plain icon in `Colors.textSecondary`, no background
+- Height: `80` on iOS (accounts for home indicator), `60` on Android
+- Bottom padding: `20` on iOS, `8` on Android
+- No top border (`borderTopWidth: 0`)
 
 ### Section Blocks
 - Wrap distinct content sections (e.g. Ingredients, Method) in rounded containers (`Radius.r400`) with `surface` or `surfaceHigh` backgrounds
@@ -204,7 +230,9 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
 /app                  → Screens and navigation (Expo Router)
 /components           → Reusable UI components (RecipeCard, SwipeStack, PantryInput, etc.)
 /constants            → Design tokens, category lists, mock data
-/assets               → Images, icons, fonts
+/assets/fonts         → Custom font files (ClashGrotesk-Bold.otf, ClashGrotesk-Semibold.otf, NeueHaasDisplayLight.ttf)
+/assets/images        → App icons and splash assets
+/assets/Recipe-images → Recipe photography
 /types                → TypeScript type definitions
 /context              → React Context providers (e.g., PantryContext, SavedRecipesContext)
 ```

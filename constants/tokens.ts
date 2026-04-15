@@ -1,7 +1,7 @@
 /**
  * Design system tokens for SCRAN
  * Visual direction: "The Graphic Editorial" — see DESIGN.md.
- * Typography font families are unchanged (Clash Grotesk Bold / NeueHaasDisplay-Light).
+ * Typography font families: Clash Grotesk Bold, Clash Grotesk Semibold, NeueHaasDisplay-Light.
  */
 
 // ---------------------------------------------------------------------------
@@ -10,8 +10,9 @@
 
 // Font family names must match the keys passed to useFonts() in app/_layout.tsx
 export const FontFamily = {
-  heading: 'ClashGrotesk-Bold',       // Used for: Title Hero, Title Page, Subtitle, Heading, Subheading
-  body:    'NeueHaasDisplay-Light',   // Used for: Body Base, Body Strong, Body Emphasis, Body Link, Body Small, Body Code
+  heading:         'ClashGrotesk-Bold',      // Used for: Title Hero, Title Page, Subtitle, Heading, Subheading
+  headingSemibold: 'ClashGrotesk-Semibold',  // Used for: medium-weight headings, subheadings where Bold is too heavy
+  body:            'NeueHaasDisplay-Light',  // Used for: Body Base, Body Strong, Body Emphasis, Body Link, Body Small, Body Code
 } as const;
 
 export const FontSize = {

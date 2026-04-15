@@ -181,12 +181,14 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: Radius.full,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.30)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.30)',
   },
 
   badgeText: {
-    fontFamily: FontFamily.body,
-    fontSize: FontSize.bodySmall,
+    fontFamily: FontFamily.headingSemibold,
+    fontSize: 12,
     lineHeight: FontSize.bodySmall * LineHeight.tight,
     fontWeight: FontWeight.regular,
     color: '#ffffff',

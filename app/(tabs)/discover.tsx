@@ -120,7 +120,10 @@ const styles = StyleSheet.create({
     fontSize: FontSize.titlePage,
     fontWeight: FontWeight.bold,
     color: Colors.accent,
-    letterSpacing: 4,
+    letterSpacing: -4.8,
+    // Negative letterSpacing clips the last glyph in RN — paddingRight
+    // equal to the absolute value restores the missing space.
+    paddingRight: 4.8,
   },
 
   savedBadge: {

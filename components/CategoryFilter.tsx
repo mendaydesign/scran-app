@@ -73,8 +73,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: Radius.full,
-    // surfaceHigh gives tonal lift off the background without any border
-    backgroundColor: Colors.surfaceHigh,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.primary,
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
@@ -86,24 +87,26 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  // Active chip: primary green background, no border
+  // Active chip: solid primary green fill, no stroke
   chipActive: {
     backgroundColor: Colors.primary,
+    borderWidth: 0,
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 3,
   },
 
   chipText: {
-    fontFamily: FontFamily.body,
+    fontFamily: FontFamily.headingSemibold,
     fontSize: FontSize.bodySmall,
     // Single-line variant — line height = font size so the chip stays compact
     lineHeight: FontSize.bodySmall,
     fontWeight: FontWeight.regular,
-    color: Colors.textSecondary,
+    color: Colors.primary,
   },
 
   chipTextActive: {
+    fontFamily: FontFamily.heading,
     fontWeight: FontWeight.bold,
     color: Colors.onPrimary,
   },
