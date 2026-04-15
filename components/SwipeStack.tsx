@@ -1,5 +1,10 @@
-// SwipeStack — manages the animated card stack and all swipe gesture logic.
+// SwipeStack — manages the animated card stack and all swipe/flip gesture logic.
 // Renders up to 3 cards (top + 2 behind). Only the top card receives gestures.
+//
+// Interactions on the top card:
+//   • Tap  → flip to reveal the recipe back face (400ms ease-in-out)
+//   • Drag → swipe left (skip) or right (save); disabled while card is flipped
+//
 // Exposes an imperative `triggerSwipeRef` so parent action buttons can fire swipes.
 
 import React, {
@@ -24,6 +29,7 @@ import Animated, {
   interpolate,
   Extrapolation,
   runOnJS,
+  Easing,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
@@ -34,10 +40,8 @@ import RecipeCard from './RecipeCard';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// How far (px) the user must drag horizontally to trigger a swipe
 const SWIPE_THRESHOLD = 120;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-// Distance the card travels off-screen after a confirmed swipe
 const FLY_DISTANCE = SCREEN_WIDTH * 1.5;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -46,16 +50,12 @@ interface SwipeStackProps {
   recipes: Recipe[];
   onSwipeLeft?: (recipe: Recipe) => void;
   onSwipeRight?: (recipe: Recipe) => void;
-  // Parent attaches a ref here to trigger programmatic swipes (e.g. from buttons)
   triggerSwipeRef?: React.MutableRefObject<
     ((direction: 'left' | 'right') => void) | null
   >;
-  // When provided, each card shows a pantry match badge (matched/total ingredients)
   pantryItems?: string[];
 }
 
-// How many ingredients in a recipe match any item in the pantry.
-// Uses case-insensitive substring matching so "garlic" matches "4 garlic cloves, minced".
 function calcMatch(
   recipe: Recipe,
   pantryItems: string[],
@@ -80,12 +80,16 @@ export default function SwipeStack({
   triggerSwipeRef,
   pantryItems,
 }: SwipeStackProps) {
-  // Index of the card currently on top of the stack
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Shared values for the top card's drag position and a normalised progress
-  // value (~translateX / SWIPE_THRESHOLD) that drives overlays and back-card
-  // animations on the UI thread without bouncing through React state.
+  // ── Flip state ────────────────────────────────────────────────────────────
+  // isFlipped (React state) controls whether the pan gesture is enabled.
+  // flipProgress (SharedValue) drives the 3D rotation animation in RecipeCard.
+  const [isFlipped, setIsFlipped] = useState(false);
+  const isFlippedRef = useRef(false);
+  const flipProgress = useSharedValue(0);
+
+  // ── Swipe shared values ───────────────────────────────────────────────────
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const swipeProgress = useSharedValue(0);
@@ -96,7 +100,7 @@ export default function SwipeStack({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, []);
 
-  // Called (on JS thread via runOnJS) once a card finishes its fly-off animation
+  // Called (on JS thread via runOnJS) once a swipe-off animation finishes
   const handleSwipeComplete = useCallback(
     (direction: 'left' | 'right') => {
       if (direction === 'right') {
@@ -105,11 +109,15 @@ export default function SwipeStack({
         onSwipeLeft?.(recipes[currentIndex]);
       }
 
-      // Reset shared values before React re-renders so the new top card
-      // starts centred with no transform carried over from the dismissed card.
+      // Reset all shared values so the next top card starts in a clean state
       translateX.value = 0;
       translateY.value = 0;
       swipeProgress.value = 0;
+
+      // Reset flip state for the next card
+      isFlippedRef.current = false;
+      setIsFlipped(false);
+      flipProgress.value = 0;
 
       setCurrentIndex((i) => i + 1);
     },
@@ -121,18 +129,15 @@ export default function SwipeStack({
       translateX,
       translateY,
       swipeProgress,
+      flipProgress,
     ],
   );
 
-  // Store the latest handler in a ref so the pan gesture's useMemo (empty deps)
-  // always calls the up-to-date version without needing to be recreated.
   const handleSwipeCompleteRef = useRef(handleSwipeComplete);
   useEffect(() => {
     handleSwipeCompleteRef.current = handleSwipeComplete;
   }, [handleSwipeComplete]);
 
-  // A stable wrapper that reads from the ref — safe to pass to runOnJS inside
-  // the gesture's empty-deps useMemo.
   const stableHandleSwipeComplete = useCallback(
     (direction: 'left' | 'right') => {
       handleSwipeCompleteRef.current(direction);
@@ -140,16 +145,33 @@ export default function SwipeStack({
     [],
   );
 
+  // ── Tap handler — toggles the card flip ───────────────────────────────────
+
+  // stableHandleTap reads from isFlippedRef so it never goes stale even though
+  // the gesture's useMemo has no deps on the flip booleans.
+  const stableHandleTap = useCallback(() => {
+    const next = !isFlippedRef.current;
+    isFlippedRef.current = next;
+    setIsFlipped(next);
+    flipProgress.value = withTiming(next ? 1 : 0, {
+      duration: 450,
+      easing: Easing.inOut(Easing.ease),
+    });
+  }, [flipProgress]);
+
   // ── Pan gesture ────────────────────────────────────────────────────────────
+  // activeOffsetX ensures tiny finger movements (< ±8 px) don't activate the
+  // pan gesture, giving the tap gesture room to fire on quick touches.
+  // enabled(!isFlipped) disables swiping entirely while the back face is shown.
 
   const panGesture = useMemo(
     () =>
       Gesture.Pan()
+        .activeOffsetX([-8, 8])
+        .enabled(!isFlipped)
         .onUpdate((e) => {
-          // Track horizontal drag; dampen vertical movement for a more natural feel
           translateX.value = e.translationX;
           translateY.value = e.translationY * 0.35;
-          // Normalised progress: 1 at right-threshold, -1 at left-threshold
           swipeProgress.value = e.translationX / SWIPE_THRESHOLD;
         })
         .onEnd((e) => {
@@ -157,7 +179,6 @@ export default function SwipeStack({
           const isSwipeLeft = e.translationX < -SWIPE_THRESHOLD;
 
           if (isSwipeRight || isSwipeLeft) {
-            // Fly the card off screen then notify JS thread
             const target = isSwipeRight ? FLY_DISTANCE : -FLY_DISTANCE;
             const direction = isSwipeRight ? 'right' : 'left';
 
@@ -171,23 +192,42 @@ export default function SwipeStack({
               },
             );
           } else {
-            // Snap back to centre
             translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
             translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
-            swipeProgress.value = withSpring(0, {
-              damping: 20,
-              stiffness: 200,
-            });
+            swipeProgress.value = withSpring(0, { damping: 20, stiffness: 200 });
           }
         }),
-    // These are stable callbacks (useCallback with [] deps) so this memo
-    // is effectively created once.
-    [triggerHaptic, stableHandleSwipeComplete],
+    // isFlipped is included so the gesture re-evaluates its enabled state
+    // whenever the card is flipped or unflipped.
+    [triggerHaptic, stableHandleSwipeComplete, isFlipped],
+  );
+
+  // ── Tap gesture ────────────────────────────────────────────────────────────
+  // maxDistance(10) ensures the tap doesn't fire if the user drags the card
+  // even slightly — only true stationary taps trigger the flip.
+
+  const tapGesture = useMemo(
+    () =>
+      Gesture.Tap()
+        .maxDistance(10)
+        .onEnd(() => {
+          runOnJS(stableHandleTap)();
+        }),
+    [stableHandleTap],
+  );
+
+  // ── Composed gesture ───────────────────────────────────────────────────────
+  // Race: whichever gesture activates first wins and cancels the other.
+  // For a drag the pan activates first (movement exceeds activeOffsetX ±8).
+  // For a tap the pan never activates (no movement), so tap wins on finger-up.
+
+  const composedGesture = useMemo(
+    () => Gesture.Race(tapGesture, panGesture),
+    [tapGesture, panGesture],
   );
 
   // ── Animated styles ────────────────────────────────────────────────────────
 
-  // Top card: translate + rotate based on drag distance
   const topCardStyle = useAnimatedStyle(() => {
     const rotate = interpolate(
       translateX.value,
@@ -204,52 +244,22 @@ export default function SwipeStack({
     };
   });
 
-  // Second card: animates toward top-card size as the top card is dragged
   const backCard1Style = useAnimatedStyle(() => {
     const progress = Math.min(Math.abs(swipeProgress.value), 1);
     return {
       transform: [
-        {
-          scale: interpolate(
-            progress,
-            [0, 1],
-            [0.95, 1.0],
-            Extrapolation.CLAMP,
-          ),
-        },
-        {
-          translateY: interpolate(
-            progress,
-            [0, 1],
-            [8, 0],
-            Extrapolation.CLAMP,
-          ),
-        },
+        { scale: interpolate(progress, [0, 1], [0.95, 1.0], Extrapolation.CLAMP) },
+        { translateY: interpolate(progress, [0, 1], [8, 0], Extrapolation.CLAMP) },
       ],
     };
   });
 
-  // Third card: animates toward second-card size as the top card is dragged
   const backCard2Style = useAnimatedStyle(() => {
     const progress = Math.min(Math.abs(swipeProgress.value), 1);
     return {
       transform: [
-        {
-          scale: interpolate(
-            progress,
-            [0, 1],
-            [0.90, 0.95],
-            Extrapolation.CLAMP,
-          ),
-        },
-        {
-          translateY: interpolate(
-            progress,
-            [0, 1],
-            [16, 8],
-            Extrapolation.CLAMP,
-          ),
-        },
+        { scale: interpolate(progress, [0, 1], [0.90, 0.95], Extrapolation.CLAMP) },
+        { translateY: interpolate(progress, [0, 1], [16, 8], Extrapolation.CLAMP) },
       ],
     };
   });
@@ -260,6 +270,8 @@ export default function SwipeStack({
     if (!triggerSwipeRef) return;
 
     triggerSwipeRef.current = (direction: 'left' | 'right') => {
+      // Don't fire while the card is flipped — user must flip back first
+      if (isFlippedRef.current) return;
       if (currentIndex >= recipes.length) return;
 
       triggerHaptic();
@@ -284,7 +296,6 @@ export default function SwipeStack({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  // Empty state — all cards have been swiped
   if (currentIndex >= recipes.length) {
     return (
       <View style={styles.emptyContainer}>
@@ -294,7 +305,12 @@ export default function SwipeStack({
         </Text>
         <TouchableOpacity
           style={styles.resetButton}
-          onPress={() => setCurrentIndex(0)}
+          onPress={() => {
+            setCurrentIndex(0);
+            isFlippedRef.current = false;
+            setIsFlipped(false);
+            flipProgress.value = 0;
+          }}
           accessibilityLabel="Start over — see all recipes again"
         >
           <Text style={styles.resetButtonText}>Start Over</Text>
@@ -303,15 +319,13 @@ export default function SwipeStack({
     );
   }
 
-  // Build a list of card indices to render (back-to-front so the last item in
-  // the array sits on top in React Native's paint order).
   const visibleIndices = [currentIndex + 2, currentIndex + 1, currentIndex]
     .filter((i) => i < recipes.length);
 
   return (
     <View style={styles.container}>
       {visibleIndices.map((recipeIndex) => {
-        const depth = recipeIndex - currentIndex; // 0 = top, 1 = behind, 2 = furthest
+        const depth = recipeIndex - currentIndex;
         const isTop = depth === 0;
         const cardAnimStyle =
           isTop
@@ -326,11 +340,11 @@ export default function SwipeStack({
             style={[styles.cardContainer, cardAnimStyle]}
           >
             {isTop ? (
-              // Only the top card is interactive
-              <GestureDetector gesture={panGesture}>
+              <GestureDetector gesture={composedGesture}>
                 <RecipeCard
                   recipe={recipes[recipeIndex]}
                   swipeProgress={swipeProgress}
+                  flipProgress={flipProgress}
                   stackDepth={0}
                   matchBadge={
                     pantryItems && pantryItems.length > 0
@@ -360,15 +374,10 @@ export default function SwipeStack({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  // Fills whatever space the parent gives it; cards are absolutely positioned
-  // inside so they all occupy the same space and stack visually.
   container: {
     flex: 1,
   },
 
-  // Each card absolutely fills the container; z-order comes from render order.
-  // Shadow lives here (not inside RecipeCard) because overflow:hidden on the
-  // card clips shadows — the parent must be shadow-owner.
   cardContainer: {
     position: 'absolute',
     top: 0,
@@ -376,10 +385,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: Radius.r400,
-    // backgroundColor is required on iOS for shadows to render —
-    // a view with no background colour casts no shadow.
     backgroundColor: '#fffcf6',
-    // Ambient shadow — tinted, not pure black, barely perceptible
     shadowColor: '#383834',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.10,
@@ -387,7 +393,6 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 
-  // ── Empty state ────────────────────────────────────────────────────────────
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
