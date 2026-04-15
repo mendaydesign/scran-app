@@ -82,7 +82,7 @@ export default function DiscoverScreen() {
           accessibilityLabel="Skip this recipe"
           accessibilityRole="button"
         >
-          <Ionicons name="close" size={IconSize.medium} color={Colors.secondary} />
+          <Ionicons name="close" size={28} color={Colors.secondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -91,7 +91,7 @@ export default function DiscoverScreen() {
           accessibilityLabel="Save this recipe"
           accessibilityRole="button"
         >
-          <Ionicons name="heart" size={IconSize.medium} color={Colors.onPrimary} />
+          <Ionicons name="heart" size={28} color={Colors.onPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -159,12 +159,11 @@ const styles = StyleSheet.create({
   },
 
   actionButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    // Ambient shadow on both buttons for tonal lift
     shadowColor: '#383834',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -172,13 +171,14 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  // Nope: white fill with secondary pink ring — decorative button style, not a sectioning border
+  // Nope: white fill with pink ring + pink X icon
   nopeButton: {
     backgroundColor: Colors.background,
     borderWidth: 2,
     borderColor: Colors.secondary,
   },
 
+  // Like: solid green circle with white heart
   likeButton: {
     backgroundColor: Colors.primary,
   },

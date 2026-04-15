@@ -1,27 +1,42 @@
 // Tab navigator layout.
-// Defines the two bottom tabs: Discover (swipe screen) and Saved (grid screen).
-// This layout is rendered by the root Stack in app/_layout.tsx whenever
-// the current route is /discover or /saved.
+// Defines the three bottom tabs: Discover, Saved, and Pantry.
+// Active tab shows a solid green pill behind the icon; labels are hidden.
 
+import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, FontSize } from '@/constants/tokens';
+import { Colors, Radius } from '@/constants/tokens';
+
+// Wrapper that adds the green pill background to the active tab icon
+function TabIcon({
+  name,
+  focused,
+}: {
+  name: React.ComponentProps<typeof Ionicons>['name'];
+  focused: boolean;
+}) {
+  return (
+    <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
+      <Ionicons
+        name={name}
+        size={24}
+        color={focused ? Colors.onPrimary : Colors.textSecondary}
+      />
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        // Dark tab bar consistent with the app's colour scheme
+        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: Colors.surface,
           borderTopWidth: 0,
-        },
-        tabBarActiveTintColor: Colors.accent,
-        tabBarInactiveTintColor: Colors.textSecondary,
-        tabBarLabelStyle: {
-          fontSize: FontSize.bodySmall,
-          marginBottom: 2,
+          height: 64,
+          paddingVertical: 10,
         },
       }}
     >
@@ -29,11 +44,10 @@ export default function TabsLayout() {
         name="discover"
         options={{
           title: 'Discover',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
               name={focused ? 'compass' : 'compass-outline'}
-              size={24}
-              color={color}
+              focused={focused}
             />
           ),
         }}
@@ -42,11 +56,10 @@ export default function TabsLayout() {
         name="saved"
         options={{
           title: 'Saved',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
               name={focused ? 'heart' : 'heart-outline'}
-              size={24}
-              color={color}
+              focused={focused}
             />
           ),
         }}
@@ -55,11 +68,10 @@ export default function TabsLayout() {
         name="pantry"
         options={{
           title: 'Pantry',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
               name={focused ? 'basket' : 'basket-outline'}
-              size={24}
-              color={color}
+              focused={focused}
             />
           ),
         }}
@@ -67,3 +79,14 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWrapper: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+  },
+  iconWrapperActive: {
+    backgroundColor: Colors.primary,
+  },
+});

@@ -4,6 +4,8 @@
 
 import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import Animated, {
   useAnimatedStyle,
   interpolate,
@@ -13,7 +15,7 @@ import Animated, {
 import type { SharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
-import type { Recipe, Difficulty } from '@/types/recipe';
+import type { Recipe } from '@/types/recipe';
 import {
   Colors,
   FontFamily,
@@ -22,13 +24,6 @@ import {
   LineHeight,
   Radius,
 } from '@/constants/tokens';
-
-// Colours for the difficulty badge — not in the main token set yet
-const DIFFICULTY_COLOR: Record<Difficulty, string> = {
-  Easy: '#4CAF50',
-  Medium: '#FF9800',
-  Hard: '#FF4444',
-};
 
 // Format minutes into a human-readable cook time string
 function formatCookTime(minutes: number): string {
@@ -46,15 +41,6 @@ interface RecipeCardProps {
   stackDepth: number; // 0 = top, 1 = behind, 2 = furthest back
   // When pantry mode is active the parent passes how many ingredients matched.
   matchBadge?: { matched: number; total: number };
-}
-
-// Colour for the match badge based on the match ratio
-function matchColor(matched: number, total: number): string {
-  if (total === 0) return Colors.textSecondary;
-  const ratio = matched / total;
-  if (ratio >= 0.7) return '#4CAF50';
-  if (ratio >= 0.4) return '#FF9800';
-  return '#FF4444';
 }
 
 export default function RecipeCard({
@@ -87,8 +73,6 @@ export default function RecipeCard({
     ),
   }));
 
-  const difficultyColor = DIFFICULTY_COLOR[recipe.difficulty];
-
   return (
     <View style={styles.card}>
       {/* Full-bleed recipe image */}
@@ -99,48 +83,46 @@ export default function RecipeCard({
         transition={200}
       />
 
-      {/* Dark overlay so text is readable over any image */}
-      <View style={styles.infoOverlay}>
-        {/* Recipe title */}
+      {/* Bottom-up gradient overlay — #004B33 from 95% opacity at bottom to transparent at top */}
+      <LinearGradient
+        colors={['rgba(0,75,51,0)', 'rgba(0,75,51,0.40)', 'rgba(0,75,51,0.95)']}
+        locations={[0, 0.6, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.infoOverlay}
+      >
+        {/* Recipe title — uppercase, large, bold */}
         <Text style={styles.title} numberOfLines={2}>
-          {recipe.title}
+          {recipe.title.toUpperCase()}
         </Text>
 
-        {/* Metadata badges */}
+        {/* Metadata badges — glassmorphism: blurred background + white tint */}
         <View style={styles.badgeRow}>
           {/* Cook time */}
-          <View style={styles.badge}>
-            <Ionicons
-              name="time-outline"
-              size={14}
-              color={Colors.textPrimary}
-            />
+          <BlurView intensity={60} tint="light" style={styles.badge}>
+            <Ionicons name="time-outline" size={14} color="#ffffff" />
             <Text style={styles.badgeText}>
               {formatCookTime(recipe.cookTime)}
             </Text>
-          </View>
+          </BlurView>
 
           {/* Difficulty */}
-          <View style={styles.badge}>
-            <Text style={[styles.badgeText, { color: difficultyColor }]}>
-              {recipe.difficulty}
-            </Text>
-          </View>
+          <BlurView intensity={60} tint="light" style={styles.badge}>
+            <Ionicons name="restaurant-outline" size={14} color="#ffffff" />
+            <Text style={styles.badgeText}>{recipe.difficulty}</Text>
+          </BlurView>
 
           {/* Pantry match — only shown when parent passes matchBadge */}
-          {matchBadge && (() => {
-            const color = matchColor(matchBadge.matched, matchBadge.total);
-            return (
-              <View style={styles.badge}>
-                <Ionicons name="basket-outline" size={14} color={color} />
-                <Text style={[styles.badgeText, { color }]}>
-                  {matchBadge.matched}/{matchBadge.total}
-                </Text>
-              </View>
-            );
-          })()}
+          {matchBadge && (
+            <BlurView intensity={60} tint="light" style={styles.badge}>
+              <Ionicons name="basket-outline" size={14} color="#ffffff" />
+              <Text style={styles.badgeText}>
+                {matchBadge.matched}/{matchBadge.total}
+              </Text>
+            </BlurView>
+          )}
         </View>
-      </View>
+      </LinearGradient>
 
       {/* LIKE label — top left, tilted */}
       <Animated.View style={[styles.likeLabel, likeStyle]}>
@@ -163,41 +145,43 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
 
-  // Semi-transparent gradient-like panel at the bottom of the card
+  // LinearGradient overlay spanning the bottom half of the card
   infoOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 80,
     paddingBottom: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'flex-end',
   },
 
   title: {
     fontFamily: FontFamily.heading,
-    fontSize: FontSize.heading,
-    lineHeight: FontSize.heading * LineHeight.heading,
+    fontSize: 36,
+    lineHeight: 36 * 1.1,
     fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: 10,
+    color: '#ffffff',
+    marginBottom: 12,
   },
 
   badgeRow: {
     flexDirection: 'row',
     gap: 8,
+    flexWrap: 'wrap',
   },
 
+  // Glassmorphism badge — BlurView requires overflow:hidden to clip to pill shape
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
 
   badgeText: {
@@ -205,7 +189,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.bodySmall,
     lineHeight: FontSize.bodySmall * LineHeight.tight,
     fontWeight: FontWeight.regular,
-    color: Colors.textPrimary,
+    color: '#ffffff',
   },
 
   // LIKE stamp — top-left corner, rotated counter-clockwise

@@ -10,6 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -63,18 +64,24 @@ function RecipeGridCard({
           transition={200}
         />
 
-        {/* Dark overlay + text at the bottom of the card */}
-        <View style={styles.cardOverlay}>
+        {/* Green gradient overlay — matches RecipeCard style */}
+        <LinearGradient
+          colors={['rgba(0,75,51,0)', 'rgba(0,75,51,0.40)', 'rgba(0,75,51,0.95)']}
+          locations={[0, 0.6, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.cardOverlay}
+        >
           <Text style={styles.cardTitle} numberOfLines={2}>
-            {recipe.title}
+            {recipe.title.toUpperCase()}
           </Text>
           <View style={styles.cardMeta}>
-            <Ionicons name="time-outline" size={12} color={Colors.textPrimary} />
+            <Ionicons name="time-outline" size={12} color="#ffffff" />
             <Text style={styles.cardMetaText}>
               {formatCookTime(recipe.cookTime)}
             </Text>
           </View>
-        </View>
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -236,16 +243,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 10,
-    paddingTop: 28,
+    paddingTop: 40,
     paddingBottom: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
   },
 
   cardTitle: {
     fontFamily: FontFamily.heading,
     fontSize: FontSize.bodySmall,
     fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
+    color: '#ffffff',
     lineHeight: FontSize.bodySmall * 1.3,
     marginBottom: 5,
   },
@@ -259,7 +265,7 @@ const styles = StyleSheet.create({
   cardMetaText: {
     fontFamily: FontFamily.body,
     fontSize: 12,
-    color: Colors.textPrimary,
+    color: '#ffffff',
     opacity: 0.85,
   },
 });
