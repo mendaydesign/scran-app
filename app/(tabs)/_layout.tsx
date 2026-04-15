@@ -1,13 +1,12 @@
-// Tab navigator layout.
-// Defines the three bottom tabs: Discover, Saved, and Pantry.
-// Active tab shows a solid green pill behind the icon; labels are hidden.
+// Tab navigator layout — three bottom tabs: Discover, Saved, Pantry.
+// Active tab shows a solid green circle behind the icon; labels are hidden.
 
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius } from '@/constants/tokens';
+import { Colors } from '@/constants/tokens';
 
-// Wrapper that adds the green pill background to the active tab icon
+// Renders the icon inside a green circle when the tab is active
 function TabIcon({
   name,
   focused,
@@ -16,11 +15,11 @@ function TabIcon({
   focused: boolean;
 }) {
   return (
-    <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
+    <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
       <Ionicons
         name={name}
-        size={24}
-        color={focused ? Colors.onPrimary : Colors.textSecondary}
+        size={22}
+        color={focused ? '#ffffff' : Colors.textSecondary}
       />
     </View>
   );
@@ -35,8 +34,11 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: Colors.surface,
           borderTopWidth: 0,
-          height: 64,
-          paddingVertical: 10,
+          // Fixed height + explicit bottom padding so the bar stays visible
+          // on both notched and non-notched devices
+          height: Platform.OS === 'ios' ? 80 : 60,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+          paddingTop: 8,
         },
       }}
     >
@@ -81,12 +83,14 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  iconWrapper: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: Radius.full,
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  iconWrapperActive: {
+  iconContainerActive: {
     backgroundColor: Colors.primary,
   },
 });
