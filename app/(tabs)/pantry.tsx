@@ -2,13 +2,14 @@
 // Adding ingredients here enables the Pantry Match toggle on the Discover tab,
 // which sorts and badges recipes by how many ingredients you already have.
 
-import { useState } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -19,20 +20,69 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { usePantry } from '@/context/PantryContext';
 import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
+import { INGREDIENT_CATEGORIES } from '@/constants/ingredients';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function PantryScreen() {
-  const { pantryItems, addItem, removeItem, clearPantry, matchBadgeEnabled, toggleMatchBadge } = usePantry();
+  const { pantryItems, addItem, removeItem, clearPantry, matchBadgeEnabled, toggleMatchBadge } =
+    usePantry();
+
   const [inputText, setInputText] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
 
+  // Tracks whether a suggestion row is mid-press. Without this, onBlur fires
+  // before onPress and collapses the dropdown before the tap registers.
+  const selectingRef = useRef(false);
+
+  // ── Autocomplete filtering ────────────────────────────────────────────────
+  // For each category, keep items that contain the query (case-insensitive),
+  // up to 4 per category. Empty categories are dropped entirely.
+  const groupedSuggestions = useMemo(() => {
+    const query = inputText.trim().toLowerCase();
+    if (!query) return [];
+    return INGREDIENT_CATEGORIES
+      .map(({ label, items }) => ({
+        label,
+        items: items.filter((i) => i.toLowerCase().includes(query)).slice(0, 4),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [inputText]);
+
+  // Flat list of every suggested item — used for the exact-match check below.
+  const allSuggestedItems = useMemo(
+    () => groupedSuggestions.flatMap((g) => g.items),
+    [groupedSuggestions],
+  );
+
+  // Show "Add [text]" when the typed text isn't already an exact suggestion.
+  const showCustomAdd =
+    inputText.trim().length > 0 &&
+    !allSuggestedItems.some((s) => s.toLowerCase() === inputText.trim().toLowerCase());
+
+  // Dropdown is only visible when the input is focused and has text.
+  const showDropdown =
+    inputFocused && inputText.trim().length > 0 && (groupedSuggestions.length > 0 || showCustomAdd);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  // Adds the current input text as a custom item (used by the Add button and
+  // the return key — same as before).
   const handleAdd = () => {
     const trimmed = inputText.trim();
     if (!trimmed) return;
     addItem(trimmed);
     setInputText('');
   };
+
+  // Adds a suggestion (or the custom text) and collapses the dropdown.
+  const handleSelect = (name: string) => {
+    addItem(name);
+    setInputText('');
+    selectingRef.current = false;
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     // edges={['top']} — tab bar owns the bottom safe area
@@ -54,31 +104,98 @@ export default function PantryScreen() {
           )}
         </View>
 
-        {/* ── Input row ───────────────────────────────────────────────────── */}
-        <View style={styles.inputRow}>
-          <TextInput
-            style={[styles.input, inputFocused && styles.inputFocused]}
-            value={inputText}
-            onChangeText={setInputText}
-            onSubmitEditing={handleAdd}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
-            placeholder="e.g. garlic, olive oil, pasta…"
-            placeholderTextColor={Colors.textSecondary}
-            returnKeyType="done"
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="Ingredient name input"
-          />
-          <TouchableOpacity
-            style={[styles.addButton, !inputText.trim() && styles.addButtonDisabled]}
-            onPress={handleAdd}
-            disabled={!inputText.trim()}
-            accessibilityLabel="Add ingredient to pantry"
-            accessibilityRole="button"
-          >
-            <Text style={styles.addButtonText}>Add</Text>
-          </TouchableOpacity>
+        {/* ── Input section — wraps the text field + autocomplete dropdown ── */}
+        {/* zIndex / elevation ensure the dropdown paints over the rows below. */}
+        <View style={styles.inputSection}>
+
+          <View style={styles.inputRow}>
+            <TextInput
+              style={[styles.input, inputFocused && styles.inputFocused]}
+              value={inputText}
+              onChangeText={setInputText}
+              onSubmitEditing={handleAdd}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => {
+                // If the user is mid-tap on a suggestion, ignore this blur so
+                // the dropdown stays visible long enough for onPress to fire.
+                if (selectingRef.current) return;
+                setInputFocused(false);
+              }}
+              placeholder="e.g. garlic, olive oil, pasta…"
+              placeholderTextColor={Colors.textSecondary}
+              returnKeyType="done"
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel="Ingredient name input"
+            />
+            <TouchableOpacity
+              style={[styles.addButton, !inputText.trim() && styles.addButtonDisabled]}
+              onPress={handleAdd}
+              disabled={!inputText.trim()}
+              accessibilityLabel="Add ingredient to pantry"
+              accessibilityRole="button"
+            >
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Autocomplete dropdown ─────────────────────────────────────── */}
+          {showDropdown && (
+            <View style={styles.dropdown}>
+              {/* keyboardShouldPersistTaps="handled" lets ScrollView pass taps
+                  through to TouchableOpacity children without dismissing the
+                  keyboard first. */}
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
+
+                {groupedSuggestions.map(({ label, items }) => (
+                  <View key={label}>
+                    {/* Category heading — not tappable */}
+                    <Text style={styles.categoryHeading}>{label}</Text>
+
+                    {items.map((item) => (
+                      <TouchableOpacity
+                        key={item}
+                        style={styles.suggestionRow}
+                        onPressIn={() => { selectingRef.current = true; }}
+                        onPress={() => handleSelect(item)}
+                        activeOpacity={0.6}
+                        accessibilityLabel={`Add ${item} to pantry`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.suggestionText}>{item}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ))}
+
+                {/* Custom "Add [text]" row — shown when there is no exact match */}
+                {showCustomAdd && (
+                  <TouchableOpacity
+                    style={[styles.suggestionRow, styles.customAddRow]}
+                    onPressIn={() => { selectingRef.current = true; }}
+                    onPress={() => handleSelect(inputText.trim())}
+                    activeOpacity={0.6}
+                    accessibilityLabel={`Add ${inputText.trim()} as a custom ingredient`}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons
+                      name="add-circle-outline"
+                      size={18}
+                      color={Colors.primary}
+                      style={styles.customAddIcon}
+                    />
+                    <Text style={styles.customAddText}>Add "{inputText.trim()}"</Text>
+                  </TouchableOpacity>
+                )}
+
+              </ScrollView>
+            </View>
+          )}
+
         </View>
 
         {/* ── Match badge toggle ──────────────────────────────────────────── */}
@@ -201,6 +318,13 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
+  // ── Input section — raised above siblings so the dropdown overlays them ──
+  inputSection: {
+    zIndex: 10,
+    // Android requires elevation to respect z-ordering
+    elevation: 10,
+  },
+
   // ── Input row ─────────────────────────────────────────────────────────────
   inputRow: {
     flexDirection: 'row',
@@ -252,6 +376,68 @@ const styles = StyleSheet.create({
     fontSize: FontSize.bodyBase,
     fontWeight: FontWeight.bold,
     color: Colors.onPrimary,
+  },
+
+  // ── Autocomplete dropdown ─────────────────────────────────────────────────
+  // Absolutely positioned so it overlays the content below without pushing it
+  // down. The inputSection's zIndex keeps it above siblings.
+  dropdown: {
+    position: 'absolute',
+    // Sit just below the TextInput (height 52) with a 4px gap
+    top: 56,
+    left: 20,
+    right: 20,
+    // Cap height at ~5 rows before scrolling kicks in
+    maxHeight: 280,
+    backgroundColor: Colors.surfaceHigh,
+    borderRadius: Radius.r400,
+    overflow: 'hidden',
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+
+  // Category label — sits above its group of items, not tappable
+  categoryHeading: {
+    fontFamily: FontFamily.headingSemibold,
+    fontSize: FontSize.bodySmall,
+    color: Colors.textSecondary,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 4,
+    letterSpacing: 0.5,
+  },
+
+  suggestionRow: {
+    paddingHorizontal: 20,
+    paddingVertical: 13,
+  },
+
+  suggestionText: {
+    fontFamily: FontFamily.body,
+    fontSize: FontSize.bodyBase,
+    color: Colors.textPrimary,
+  },
+
+  // "Add [text]" row — slightly distinct to signal it's a custom action
+  customAddRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    // Tonal separator between suggestions and custom row
+    backgroundColor: Colors.surface,
+  },
+
+  customAddIcon: {
+    flexShrink: 0,
+  },
+
+  customAddText: {
+    fontFamily: FontFamily.headingSemibold,
+    fontSize: FontSize.bodyBase,
+    color: Colors.primary,
   },
 
   // ── Match badge toggle — sits on surface for tonal separation ────────────
@@ -313,7 +499,7 @@ const styles = StyleSheet.create({
     lineHeight: FontSize.bodyBase * 1.4,
   },
 
-  // ── Ingredient list — sits on surfaceHigh for tonal lift off the page ──────
+  // ── Ingredient list — sits on surface for tonal lift off the page ─────────
   list: {
     paddingHorizontal: 20,
     paddingTop: 8,
