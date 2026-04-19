@@ -13,7 +13,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePantry } from '@/context/PantryContext';
 import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
 import { INGREDIENT_CATEGORIES } from '@/constants/ingredients';
+import ToggleSwitch from '@/components/ToggleSwitch';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -216,11 +216,10 @@ export default function PantryScreen() {
               Displays how many ingredients you have on each recipe card
             </Text>
           </View>
-          <Switch
+          <ToggleSwitch
             value={matchBadgeEnabled}
             onValueChange={toggleMatchBadge}
-            trackColor={{ false: Colors.border, true: Colors.accent }}
-            thumbColor={Colors.textPrimary}
+            accessibilityLabel="Toggle ingredient match badges"
           />
         </TouchableOpacity>
 
