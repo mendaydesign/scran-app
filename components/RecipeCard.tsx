@@ -110,12 +110,18 @@ export default function RecipeCard({
       {/* ── Front face ──────────────────────────────────────────────────── */}
       <Animated.View style={[styles.face, frontFaceStyle]}>
         <View style={styles.card}>
-          {/* Full-bleed recipe image */}
+          {/* Full-bleed recipe image.
+              priority="high"  → tells the native image pipeline to load
+                                 eagerly (important for back-stack cards that
+                                 must be ready before they reach the top).
+              transition={0}   → no fade-in so locally bundled assets appear
+                                 instantly rather than fading from blank. */}
           <Image
             source={recipe.imageUrl}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
-            transition={200}
+            priority="high"
+            transition={0}
           />
 
           {/* Bottom-up gradient overlay */}

@@ -92,6 +92,11 @@ export default function SwipeStack({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const swipeProgress = useSharedValue(0);
+  // Opacity of the departing card. Set to 0 the instant the fly-off animation
+  // finishes — before any position values are reset and before setCurrentIndex
+  // fires. This guarantees the old card is invisible during the one-frame gap
+  // between the translateX snap-back and React removing it from the DOM.
+  const exitOpacity = useSharedValue(1);
 
   // ── JS-thread helpers ──────────────────────────────────────────────────────
 
@@ -99,25 +104,37 @@ export default function SwipeStack({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, []);
 
-  // Called (on JS thread via runOnJS) once a swipe-off animation finishes
+  // Called (on JS thread via runOnJS) the instant the fly-off animation ends.
+  //
+  // Sequence that eliminates all ghost/flash artefacts:
+  //   1. exitOpacity → 0  — card becomes invisible while still at FLY_DISTANCE.
+  //                          This happens before any position reset and before
+  //                          React re-renders, so there is no frame where the old
+  //                          card is visible at the centre of the screen.
+  //   2. setCurrentIndex  — React removes the old card and promotes the next one.
+  //   3. useEffect below  — after React commits, reset all shared values for the
+  //                          fresh swipe cycle (translateX, translateY,
+  //                          swipeProgress, exitOpacity).
+  //
+  // Crucially, translateX is NOT reset here. Resetting it before setCurrentIndex
+  // snapped the departing card back to x=0 for one frame, which was the ghost.
   const handleSwipeComplete = useCallback(
     (direction: 'left' | 'right') => {
+      // Step 1 — hide the departing card before anything else moves
+      exitOpacity.value = 0;
+
       if (direction === 'right') {
         onSwipeRight?.(recipes[currentIndex]);
       } else {
         onSwipeLeft?.(recipes[currentIndex]);
       }
 
-      // Reset all shared values so the next top card starts in a clean state
-      translateX.value = 0;
-      translateY.value = 0;
-      swipeProgress.value = 0;
-
       // Reset flip state for the next card
       isFlippedRef.current = false;
       setIsFlipped(false);
       flipProgress.value = 0;
 
+      // Step 2 — trigger the re-render that removes the old card
       setCurrentIndex((i) => i + 1);
     },
     [
@@ -125,12 +142,21 @@ export default function SwipeStack({
       recipes,
       onSwipeLeft,
       onSwipeRight,
-      translateX,
-      translateY,
-      swipeProgress,
+      exitOpacity,
       flipProgress,
     ],
   );
+
+  // Step 3 — reset all shared values after React has committed the new index.
+  // The old card is already unmounted by the time this runs, so resetting
+  // translateX to 0 here only affects the new top card (which starts centred).
+  useEffect(() => {
+    translateX.value = 0;
+    translateY.value = 0;
+    swipeProgress.value = 0;
+    exitOpacity.value = 1;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
 
   const handleSwipeCompleteRef = useRef(handleSwipeComplete);
   useEffect(() => {
@@ -225,6 +251,17 @@ export default function SwipeStack({
     [tapGesture, panGesture],
   );
 
+  // Stable no-op gesture for back cards.
+  // Every card in the stack is always wrapped with GestureDetector — back cards
+  // use this disabled gesture so the component tree shape is identical at every
+  // depth. This means React sees the same GestureDetector→RecipeCard structure
+  // regardless of a card's position, so RecipeCard is NEVER unmounted and
+  // remounted when a card advances from the back of the stack to the top.
+  // Without this, the GestureDetector insertion when depth changes 1→0 causes
+  // React to treat the inner RecipeCard as a brand-new component, restarting
+  // the expo-image load and producing a blank-image flash on every swipe.
+  const disabledGesture = useMemo(() => Gesture.Tap().enabled(false), []);
+
   // ── Animated styles ────────────────────────────────────────────────────────
 
   const topCardStyle = useAnimatedStyle(() => {
@@ -235,6 +272,7 @@ export default function SwipeStack({
       Extrapolation.CLAMP,
     );
     return {
+      opacity: exitOpacity.value,
       transform: [
         { translateX: translateX.value },
         { translateY: translateY.value },
@@ -254,6 +292,19 @@ export default function SwipeStack({
   });
 
   const backCard2Style = useAnimatedStyle(() => {
+    const progress = Math.min(Math.abs(swipeProgress.value), 1);
+    return {
+      transform: [
+        { scale: interpolate(progress, [0, 1], [0.90, 0.95], Extrapolation.CLAMP) },
+        { translateY: interpolate(progress, [0, 1], [16, 8], Extrapolation.CLAMP) },
+      ],
+    };
+  });
+
+  // Fourth card — sits directly behind backCard2, visually identical at rest.
+  // Pre-rendering it ensures the card that becomes the new backCard2 after a
+  // swipe is already mounted with its image loaded, so there is no mount-flash.
+  const backCard3Style = useAnimatedStyle(() => {
     const progress = Math.min(Math.abs(swipeProgress.value), 1);
     return {
       transform: [
@@ -318,8 +369,15 @@ export default function SwipeStack({
     );
   }
 
-  const visibleIndices = [currentIndex + 2, currentIndex + 1, currentIndex]
-    .filter((i) => i < recipes.length);
+  // Render 4 cards (top + 3 behind) so the card that will become backCard2
+  // after the next swipe is already mounted with its image painted — no fresh
+  // mount flash when the stack advances.
+  const visibleIndices = [
+    currentIndex + 3,
+    currentIndex + 2,
+    currentIndex + 1,
+    currentIndex,
+  ].filter((i) => i < recipes.length);
 
   return (
     <View style={styles.container}>
@@ -331,30 +389,32 @@ export default function SwipeStack({
             ? topCardStyle
             : depth === 1
               ? backCard1Style
-              : backCard2Style;
+              : depth === 2
+                ? backCard2Style
+                : backCard3Style;
 
         return (
           <Animated.View
             key={recipes[recipeIndex].id}
             style={[styles.cardContainer, cardAnimStyle]}
+            // Android: promote to a hardware GPU layer so transforms run
+            // without re-compositing the view content each frame.
+            // iOS: shouldRasterizeIOS is intentionally omitted — it captures
+            // a static bitmap snapshot at render time, but expo-image loads
+            // its pixels asynchronously even for local bundled assets.
+            // That race produces a blank snapshot that appears during swipes.
+            // Reanimated's UI-thread worklets give smooth transforms on iOS
+            // without needing an explicit rasterization hint.
+            renderToHardwareTextureAndroid
           >
-            {isTop ? (
-              <GestureDetector gesture={composedGesture}>
-                <RecipeCard
-                  recipe={recipes[recipeIndex]}
-                  swipeProgress={swipeProgress}
-                  flipProgress={flipProgress}
-                  stackDepth={0}
-                  matchBadge={
-                    pantryItems && pantryItems.length > 0
-                      ? calcMatch(recipes[recipeIndex], pantryItems)
-                      : undefined
-                  }
-                />
-              </GestureDetector>
-            ) : (
+            {/* All cards use the same GestureDetector→RecipeCard tree so
+                React never unmounts RecipeCard when depth changes 1→0.
+                Back cards receive a disabled noop gesture. */}
+            <GestureDetector gesture={isTop ? composedGesture : disabledGesture}>
               <RecipeCard
                 recipe={recipes[recipeIndex]}
+                swipeProgress={isTop ? swipeProgress : undefined}
+                flipProgress={isTop ? flipProgress : undefined}
                 stackDepth={depth}
                 matchBadge={
                   pantryItems && pantryItems.length > 0
@@ -362,7 +422,7 @@ export default function SwipeStack({
                     : undefined
                 }
               />
-            )}
+            </GestureDetector>
           </Animated.View>
         );
       })}
