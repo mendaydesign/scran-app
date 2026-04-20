@@ -36,6 +36,7 @@ import * as Haptics from 'expo-haptics';
 
 import type { Recipe } from '@/types/recipe';
 import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
+import { ingredientMatches } from '@/utils/ingredientUtils';
 import RecipeCard from './RecipeCard';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -63,9 +64,7 @@ function calcMatch(
   const total = recipe.ingredients.length;
   const matched = recipe.ingredients.filter((ingredient) =>
     pantryItems.some(
-      (item) =>
-        item.trim().length > 0 &&
-        ingredient.toLowerCase().includes(item.trim().toLowerCase()),
+      (item) => item.trim().length > 0 && ingredientMatches(ingredient, item),
     ),
   ).length;
   return { matched, total };

@@ -3,6 +3,7 @@
 // and step-by-step method. Back and save buttons float over the hero image,
 // inset by the device's safe area so they don't sit under the status bar.
 
+import { useRef, useState, useEffect } from 'react';
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -11,7 +12,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { MOCK_RECIPES } from '@/constants/mockRecipes';
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
+import { usePantry } from '@/context/PantryContext';
+import { useShoppingList } from '@/context/ShoppingListContext';
 import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
+import { ingredientMatches } from '@/utils/ingredientUtils';
 import type { Difficulty } from '@/types/recipe';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -36,6 +40,19 @@ export default function RecipeDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isSaved, saveRecipe, unsaveRecipe } = useSavedRecipes();
+  const { pantryItems } = usePantry();
+  const { addItems } = useShoppingList();
+
+  // Toast state — shows a brief confirmation after adding to the shopping list
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear the timer on unmount to avoid state updates on an unmounted component
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const recipe = MOCK_RECIPES.find((r) => r.id === id);
 
@@ -53,6 +70,40 @@ export default function RecipeDetail() {
 
   const saved = isSaved(recipe.id);
   const difficultyColor = DIFFICULTY_COLOR[recipe.difficulty];
+
+  // Adds the recipe's missing ingredients to the shopping list.
+  // Skips anything the user already has in their pantry, and deduplicates
+  // against whatever is already on the shopping list.
+  const handleAddToShoppingList = () => {
+    // Filter out ingredients the user already has in their pantry.
+    // Uses the same substring-match logic as the Discover tab's match badge.
+    const missingIngredients = recipe.ingredients.filter(
+      (ingredient) =>
+        !pantryItems.some(
+          (pantryItem) =>
+            pantryItem.trim().length > 0 && ingredientMatches(ingredient, pantryItem),
+        ),
+    );
+
+    // addItems handles deduplication against the existing shopping list and
+    // returns the count of items that were actually added.
+    const added = addItems(
+      missingIngredients.map((name) => ({
+        name,
+        recipeId: recipe.id,
+        recipeName: recipe.title,
+      })),
+    );
+
+    const message =
+      added === 0
+        ? 'All ingredients already in your list'
+        : `Added ${added} item${added !== 1 ? 's' : ''} to shopping list`;
+
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(message);
+    toastTimerRef.current = setTimeout(() => setToast(null), 2500);
+  };
 
   return (
     <View style={styles.container}>
@@ -117,6 +168,19 @@ export default function RecipeDetail() {
             ))}
           </View>
 
+          {/* ── Add to Shopping List — only shown for saved recipes ──────── */}
+          {saved && (
+            <TouchableOpacity
+              style={styles.shoppingListButton}
+              onPress={handleAddToShoppingList}
+              accessibilityLabel="Add missing ingredients to shopping list"
+              accessibilityRole="button"
+            >
+              <Ionicons name="cart-outline" size={20} color={Colors.onPrimary} />
+              <Text style={styles.shoppingListButtonText}>Add to Shopping List</Text>
+            </TouchableOpacity>
+          )}
+
           {/* ── Method — sits on surfaceHigh for contrast vs ingredients ─ */}
           <View style={[styles.section, styles.sectionAlt]}>
             <Text style={styles.sectionTitle}>Method</Text>
@@ -135,6 +199,17 @@ export default function RecipeDetail() {
 
         </View>
       </ScrollView>
+
+      {/* ── Toast confirmation ───────────────────────────────────────────── */}
+      {toast && (
+        <View
+          style={[styles.toast, { bottom: insets.bottom + 24 }]}
+          pointerEvents="none"
+        >
+          <Ionicons name="checkmark-circle" size={18} color={Colors.onPrimary} />
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
 
       {/* ── Floating back button ──────────────────────────────────────────── */}
       <TouchableOpacity
@@ -311,6 +386,58 @@ const styles = StyleSheet.create({
     fontSize: FontSize.bodySmall,
     fontWeight: FontWeight.bold,
     color: Colors.onPrimary,
+  },
+
+  // ── Add to Shopping List button ───────────────────────────────────────────
+  shoppingListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.full,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    marginBottom: 16,
+    minHeight: 54,
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+
+  shoppingListButtonText: {
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.bodyBase,
+    fontWeight: FontWeight.bold,
+    color: Colors.onPrimary,
+  },
+
+  // ── Toast snackbar ────────────────────────────────────────────────────────
+  toast: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: Colors.textPrimary,
+    borderRadius: Radius.full,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.20,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+
+  toastText: {
+    fontFamily: FontFamily.headingSemibold,
+    fontSize: FontSize.bodySmall,
+    color: Colors.onPrimary,
+    flex: 1,
   },
 
   // ── Floating buttons (back + save) ────────────────────────────────────────

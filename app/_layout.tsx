@@ -14,6 +14,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { SavedRecipesProvider } from '@/context/SavedRecipesContext';
 import { PantryProvider } from '@/context/PantryContext';
+import { ShoppingListProvider } from '@/context/ShoppingListContext';
 
 // Keep the splash screen visible while fonts are loading
 SplashScreen.preventAutoHideAsync();
@@ -40,11 +41,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        {/* Both context providers wrap everything so state is shared across all tabs. */}
+        {/* All context providers wrap everything so state is shared across all tabs. */}
         <SavedRecipesProvider>
           <PantryProvider>
-            <Stack screenOptions={{ headerShown: false }} />
-            <StatusBar style="light" />
+            <ShoppingListProvider>
+              <Stack screenOptions={{ headerShown: false }} />
+              <StatusBar style="light" />
+            </ShoppingListProvider>
           </PantryProvider>
         </SavedRecipesProvider>
       </SafeAreaProvider>
