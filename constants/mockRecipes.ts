@@ -5,6 +5,7 @@
 
 import data from '../scran_recipes.json';
 import type { Recipe, Difficulty } from '@/types/recipe';
+import { NUTRITION_DATA } from '@/constants/nutritionData';
 
 // Map each recipe ID to its local image asset
 const RECIPE_IMAGES: Record<string, number> = {
@@ -51,6 +52,8 @@ export const MOCK_RECIPES: Recipe[] = data.recipes.map((r) => ({
   imageUrl: RECIPE_IMAGES[r.id],
   // Cast difficulty: JSON infers it as string, but our type narrows it
   difficulty: r.difficulty as Difficulty,
+  // Attach per-serving nutrition data from the separate constants file
+  nutrition: NUTRITION_DATA[r.id],
 }));
 
 // 'All' is prepended so the filter chip row always has a show-everything option

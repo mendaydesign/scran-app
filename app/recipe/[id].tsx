@@ -1,7 +1,7 @@
 // RecipeDetail — full recipe view, pushed as a Stack screen over the tabs.
-// Shows the hero image, metadata badges, description, ingredient list,
-// and step-by-step method. Back and save buttons float over the hero image,
-// inset by the device's safe area so they don't sit under the status bar.
+// Shows the hero image, metadata badges, description, then a 3-tab segmented
+// control switching between Ingredients, Method, and Nutrition.
+// Back and save buttons float over the hero image.
 
 import { useRef, useState, useEffect } from 'react';
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
@@ -17,6 +17,10 @@ import { useShoppingList } from '@/context/ShoppingListContext';
 import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
 import { ingredientMatches } from '@/utils/ingredientUtils';
 import type { Difficulty } from '@/types/recipe';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Tab = 'ingredients' | 'method' | 'nutrition';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -43,11 +47,12 @@ export default function RecipeDetail() {
   const { pantryItems } = usePantry();
   const { addItems } = useShoppingList();
 
+  const [activeTab, setActiveTab] = useState<Tab>('ingredients');
+
   // Toast state — shows a brief confirmation after adding to the shopping list
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clear the timer on unmount to avoid state updates on an unmounted component
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -56,7 +61,6 @@ export default function RecipeDetail() {
 
   const recipe = MOCK_RECIPES.find((r) => r.id === id);
 
-  // Fallback for an invalid ID (shouldn't happen in normal use)
   if (!recipe) {
     return (
       <View style={[styles.container, styles.centred, { paddingTop: insets.top }]}>
@@ -71,12 +75,7 @@ export default function RecipeDetail() {
   const saved = isSaved(recipe.id);
   const difficultyColor = DIFFICULTY_COLOR[recipe.difficulty];
 
-  // Adds the recipe's missing ingredients to the shopping list.
-  // Skips anything the user already has in their pantry, and deduplicates
-  // against whatever is already on the shopping list.
   const handleAddToShoppingList = () => {
-    // Filter out ingredients the user already has in their pantry.
-    // Uses the same substring-match logic as the Discover tab's match badge.
     const missingIngredients = recipe.ingredients.filter(
       (ingredient) =>
         !pantryItems.some(
@@ -85,8 +84,6 @@ export default function RecipeDetail() {
         ),
     );
 
-    // addItems handles deduplication against the existing shopping list and
-    // returns the count of items that were actually added.
     const added = addItems(
       missingIngredients.map((name) => ({
         name,
@@ -105,10 +102,98 @@ export default function RecipeDetail() {
     toastTimerRef.current = setTimeout(() => setToast(null), 2500);
   };
 
+  // ── Tab content ─────────────────────────────────────────────────────────────
+
+  const renderIngredientsTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.section}>
+        {recipe.ingredients.map((ingredient, i) => (
+          <View key={i} style={styles.ingredientRow}>
+            <View style={styles.bullet} />
+            <Text style={styles.bodyText}>{ingredient}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Add to Shopping List — only shown for saved recipes */}
+      {saved && (
+        <TouchableOpacity
+          style={styles.shoppingListButton}
+          onPress={handleAddToShoppingList}
+          accessibilityLabel="Add missing ingredients to shopping list"
+          accessibilityRole="button"
+        >
+          <Ionicons name="cart-outline" size={20} color={Colors.onPrimary} />
+          <Text style={styles.shoppingListButtonText}>Add to Shopping List</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  const renderMethodTab = () => (
+    <View style={styles.tabContent}>
+      <View style={[styles.section, styles.sectionAlt]}>
+        {recipe.steps.map((step, i) => (
+          <View key={i} style={styles.stepRow}>
+            <View style={styles.stepBadge}>
+              <Text style={styles.stepNumber}>{i + 1}</Text>
+            </View>
+            <Text style={styles.bodyText}>{step}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+
+  const renderNutritionTab = () => {
+    const n = recipe.nutrition;
+    if (!n) {
+      return (
+        <View style={[styles.tabContent, styles.centred]}>
+          <Text style={styles.noDataText}>Nutritional data not available.</Text>
+        </View>
+      );
+    }
+
+    const rows: Array<{ label: string; value: string }> = [
+      { label: 'Calories',        value: `${n.calories} kcal` },
+      { label: 'Fat',             value: `${n.fat}g` },
+      { label: 'Saturated Fat',   value: `${n.saturatedFat}g` },
+      { label: 'Dietary Fibre',   value: `${n.fibre}g` },
+      { label: 'Carbohydrates',   value: `${n.carbohydrates}g` },
+      { label: 'Sugars',          value: `${n.sugars}g` },
+      { label: 'Protein',         value: `${n.protein}g` },
+      { label: 'Sodium',          value: `${n.sodium}mg` },
+    ];
+
+    return (
+      <View style={styles.tabContent}>
+        <View style={styles.section}>
+          <Text style={styles.nutritionNote}>
+            Nutritional information per serving
+          </Text>
+          {rows.map((row, i) => (
+            <View
+              key={row.label}
+              style={[
+                styles.nutritionRow,
+                i < rows.length - 1 && styles.nutritionRowBorder,
+              ]}
+            >
+              <Text style={styles.nutritionLabel}>{row.label}</Text>
+              <Text style={styles.nutritionValue}>{row.value}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
   return (
     <View style={styles.container}>
 
-      {/* ── Scrollable content ────────────────────────────────────────────── */}
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* Hero image */}
@@ -118,7 +203,6 @@ export default function RecipeDetail() {
             style={StyleSheet.absoluteFill}
             contentFit="cover"
           />
-          {/* Subtle scrim at the bottom so the content area below reads cleanly */}
           <View style={styles.heroScrim} />
         </View>
 
@@ -128,24 +212,21 @@ export default function RecipeDetail() {
           {/* Title */}
           <Text style={styles.recipeTitle}>{recipe.title}</Text>
 
-          {/* Metadata badges — wraps onto multiple lines if needed */}
+          {/* Metadata badges */}
           <View style={styles.badgeRow}>
             <View style={styles.badge}>
               <Text style={[styles.badgeText, { color: difficultyColor }]}>
                 {recipe.difficulty}
               </Text>
             </View>
-
             <View style={styles.badge}>
               <Ionicons name="time-outline" size={13} color={Colors.textSecondary} />
               <Text style={styles.badgeText}>Cook {formatTime(recipe.cookTime)}</Text>
             </View>
-
             <View style={styles.badge}>
               <Ionicons name="hourglass-outline" size={13} color={Colors.textSecondary} />
               <Text style={styles.badgeText}>Prep {formatTime(recipe.prepTime)}</Text>
             </View>
-
             <View style={styles.badge}>
               <Ionicons name="people-outline" size={13} color={Colors.textSecondary} />
               <Text style={styles.badgeText}>{recipe.servings} servings</Text>
@@ -155,44 +236,32 @@ export default function RecipeDetail() {
           {/* Description */}
           <Text style={styles.description}>{recipe.description}</Text>
 
-          <View style={{ height: 32 }} />
-
-          {/* ── Ingredients — sits on surface for tonal lift ─────────── */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ingredients</Text>
-            {recipe.ingredients.map((ingredient, i) => (
-              <View key={i} style={styles.ingredientRow}>
-                <View style={styles.bullet} />
-                <Text style={styles.bodyText}>{ingredient}</Text>
-              </View>
+          {/* ── Segmented tab bar ──────────────────────────────────────────── */}
+          <View style={styles.tabBar}>
+            {(['ingredients', 'method', 'nutrition'] as Tab[]).map((tab) => (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
+                onPress={() => setActiveTab(tab)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: activeTab === tab }}
+              >
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    activeTab === tab && styles.tabLabelActive,
+                  ]}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
 
-          {/* ── Add to Shopping List — only shown for saved recipes ──────── */}
-          {saved && (
-            <TouchableOpacity
-              style={styles.shoppingListButton}
-              onPress={handleAddToShoppingList}
-              accessibilityLabel="Add missing ingredients to shopping list"
-              accessibilityRole="button"
-            >
-              <Ionicons name="cart-outline" size={20} color={Colors.onPrimary} />
-              <Text style={styles.shoppingListButtonText}>Add to Shopping List</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* ── Method — sits on surfaceHigh for contrast vs ingredients ─ */}
-          <View style={[styles.section, styles.sectionAlt]}>
-            <Text style={styles.sectionTitle}>Method</Text>
-            {recipe.steps.map((step, i) => (
-              <View key={i} style={styles.stepRow}>
-                <View style={styles.stepBadge}>
-                  <Text style={styles.stepNumber}>{i + 1}</Text>
-                </View>
-                <Text style={styles.bodyText}>{step}</Text>
-              </View>
-            ))}
-          </View>
+          {/* ── Active tab content ──────────────────────────────────────────── */}
+          {activeTab === 'ingredients' && renderIngredientsTab()}
+          {activeTab === 'method'      && renderMethodTab()}
+          {activeTab === 'nutrition'   && renderNutritionTab()}
 
           {/* Bottom breathing room */}
           <View style={{ height: 48 }} />
@@ -200,7 +269,7 @@ export default function RecipeDetail() {
         </View>
       </ScrollView>
 
-      {/* ── Toast confirmation ───────────────────────────────────────────── */}
+      {/* Toast confirmation */}
       {toast && (
         <View
           style={[styles.toast, { bottom: insets.bottom + 24 }]}
@@ -211,7 +280,7 @@ export default function RecipeDetail() {
         </View>
       )}
 
-      {/* ── Floating back button ──────────────────────────────────────────── */}
+      {/* Floating back button */}
       <TouchableOpacity
         style={[styles.floatingBtn, styles.backBtn, { top: insets.top + 12 }]}
         onPress={() => router.back()}
@@ -221,7 +290,7 @@ export default function RecipeDetail() {
         <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
       </TouchableOpacity>
 
-      {/* ── Floating save button ──────────────────────────────────────────── */}
+      {/* Floating save button */}
       <TouchableOpacity
         style={[styles.floatingBtn, styles.saveBtn, { top: insets.top + 12 }]}
         onPress={() => (saved ? unsaveRecipe(recipe.id) : saveRecipe(recipe))}
@@ -315,26 +384,62 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
-  // ── Sections — tonal containers for depth without dividers ───────────────
+  // ── Segmented tab bar ─────────────────────────────────────────────────────
+  // Outer pill container sits on surfaceHigh; active tab gets a surface
+  // background to "lift" off it — same tonal trick used across the app.
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surfaceHigh,
+    borderRadius: Radius.full,
+    padding: 4,
+    marginBottom: 20,
+  },
+
+  tabItem: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  tabItemActive: {
+    backgroundColor: Colors.surface,
+    // Subtle shadow to lift the active pill
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  tabLabel: {
+    fontFamily: FontFamily.headingSemibold,
+    fontSize: FontSize.bodySmall,
+    color: Colors.textSecondary,
+  },
+
+  tabLabelActive: {
+    fontFamily: FontFamily.heading,
+    color: Colors.textPrimary,
+  },
+
+  // ── Tab content wrapper ───────────────────────────────────────────────────
+  tabContent: {
+    gap: 16,
+  },
+
+  // ── Sections — tonal containers ───────────────────────────────────────────
   section: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.r400,
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 12,
-    marginBottom: 16,
   },
 
   sectionAlt: {
     backgroundColor: Colors.surfaceHigh,
-  },
-
-  sectionTitle: {
-    fontFamily: FontFamily.heading,
-    fontSize: FontSize.heading,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: 16,
   },
 
   // ── Ingredients ───────────────────────────────────────────────────────────
@@ -350,7 +455,7 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: Colors.primary,
-    marginTop: 9, // aligns with the cap-height of bodyBase text
+    marginTop: 9,
     flexShrink: 0,
   },
 
@@ -388,6 +493,46 @@ const styles = StyleSheet.create({
     color: Colors.onPrimary,
   },
 
+  // ── Nutrition ─────────────────────────────────────────────────────────────
+  nutritionNote: {
+    fontFamily: FontFamily.body,
+    fontSize: FontSize.bodySmall,
+    color: Colors.textSecondary,
+    marginBottom: 16,
+  },
+
+  nutritionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 13,
+  },
+
+  nutritionRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+
+  nutritionLabel: {
+    fontFamily: FontFamily.body,
+    fontSize: FontSize.bodyBase,
+    color: Colors.textPrimary,
+  },
+
+  nutritionValue: {
+    fontFamily: FontFamily.headingSemibold,
+    fontSize: FontSize.bodyBase,
+    color: Colors.textPrimary,
+  },
+
+  noDataText: {
+    fontFamily: FontFamily.body,
+    fontSize: FontSize.bodyBase,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 40,
+  },
+
   // ── Add to Shopping List button ───────────────────────────────────────────
   shoppingListButton: {
     flexDirection: 'row',
@@ -398,7 +543,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     paddingVertical: 16,
     paddingHorizontal: 28,
-    marginBottom: 16,
     minHeight: 54,
     shadowColor: '#383834',
     shadowOffset: { width: 0, height: 4 },
@@ -414,7 +558,7 @@ const styles = StyleSheet.create({
     color: Colors.onPrimary,
   },
 
-  // ── Toast snackbar ────────────────────────────────────────────────────────
+  // ── Toast ─────────────────────────────────────────────────────────────────
   toast: {
     position: 'absolute',
     left: 20,
@@ -440,7 +584,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── Floating buttons (back + save) ────────────────────────────────────────
+  // ── Floating buttons ──────────────────────────────────────────────────────
   floatingBtn: {
     position: 'absolute',
     width: 40,
