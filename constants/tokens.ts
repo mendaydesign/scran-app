@@ -94,7 +94,7 @@ export const IconSize = {
 
 export const Colors = {
   // ── Surfaces (warm off-white tonal hierarchy) ────────────────────────────
-  background:    '#fffcf6', // Level 1 — the canvas
+  background:    '#FDFAF4', // Level 1 — the canvas
   surface:       '#f6f3ed', // Level 2 — layout blocks / chip backgrounds
   surfaceHigh:   '#f0eee6', // Level 3 — card backgrounds / nested modules
 

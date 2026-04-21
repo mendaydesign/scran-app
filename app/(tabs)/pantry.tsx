@@ -11,8 +11,6 @@ import {
   FlatList,
   ScrollView,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -88,11 +86,7 @@ export default function PantryScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <KeyboardAvoidingView
-        style={styles.inner}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={16}
-      >
+      <View style={styles.inner}>
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <View style={styles.header}>
@@ -251,7 +245,9 @@ export default function PantryScreen() {
               />
             </TouchableOpacity>
 
-            {/* Ingredient list or empty state */}
+            {/* Ingredient list or empty state — overflow:hidden prevents the
+                content from bleeding into the sections above if space is tight */}
+            <View style={styles.contentArea}>
             {pantryItems.length === 0 ? (
 
               <View style={styles.emptyContainer}>
@@ -298,6 +294,7 @@ export default function PantryScreen() {
               </>
 
             )}
+            </View>
           </>
 
         ) : (
@@ -307,7 +304,7 @@ export default function PantryScreen() {
 
         )}
 
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -523,6 +520,12 @@ const styles = StyleSheet.create({
     fontSize: FontSize.bodySmall,
     color: Colors.textSecondary,
     lineHeight: FontSize.bodySmall * 1.4,
+  },
+
+  // ── Content area — clips children so they never overflow into sections above
+  contentArea: {
+    flex: 1,
+    overflow: 'hidden',
   },
 
   // ── Empty state ───────────────────────────────────────────────────────────
