@@ -9,6 +9,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { MOCK_RECIPES } from '@/constants/mockRecipes';
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
@@ -24,11 +25,14 @@ type Tab = 'ingredients' | 'method' | 'nutrition';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const DIFFICULTY_COLOR: Record<Difficulty, string> = {
-  Easy: '#4CAF50',
-  Medium: '#FF9800',
-  Hard: '#FF4444',
+const DIFFICULTY_BADGE: Record<Difficulty, { bg: string; fg: string }> = {
+  Easy:   { bg: '#D5FB2A', fg: '#3A5500' },
+  Medium: { bg: '#FBA42A', fg: '#4C310C' },
+  Hard:   { bg: '#FB2A2A', fg: '#FFE2E2' },
 };
+const BOLT_COUNT: Record<Difficulty, number> = { Easy: 1, Medium: 2, Hard: 3 };
+const TIME_BADGE    = { bg: '#B8F9D7', fg: '#226248' };
+const SERVES_BADGE  = { bg: '#F9B8F5', fg: '#4A3849' };
 
 function formatTime(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
@@ -73,7 +77,8 @@ export default function RecipeDetail() {
   }
 
   const saved = isSaved(recipe.id);
-  const difficultyColor = DIFFICULTY_COLOR[recipe.difficulty];
+  const diffBadge = DIFFICULTY_BADGE[recipe.difficulty];
+  const diffBolts = BOLT_COUNT[recipe.difficulty];
 
   const handleAddToShoppingList = () => {
     const missingIngredients = recipe.ingredients.filter(
@@ -214,22 +219,44 @@ export default function RecipeDetail() {
 
           {/* Metadata badges */}
           <View style={styles.badgeRow}>
-            <View style={styles.badge}>
-              <Text style={[styles.badgeText, { color: difficultyColor }]}>
-                {recipe.difficulty}
+            {/* Difficulty — bolt count matches level */}
+            <View style={[styles.badge, { backgroundColor: diffBadge.bg }]}>
+              {Array.from({ length: diffBolts }).map((_, i) => (
+                <MaterialIcons
+                  key={i}
+                  name="bolt"
+                  size={15}
+                  color={diffBadge.fg}
+                  style={i > 0 ? { marginLeft: -5 } : undefined}
+                />
+              ))}
+              <Text style={[styles.badgeText, { color: diffBadge.fg }]}>
+                {recipe.difficulty.toUpperCase()}
               </Text>
             </View>
-            <View style={styles.badge}>
-              <Ionicons name="time-outline" size={13} color={Colors.textSecondary} />
-              <Text style={styles.badgeText}>Cook {formatTime(recipe.cookTime)}</Text>
+
+            {/* Cook time */}
+            <View style={[styles.badge, { backgroundColor: TIME_BADGE.bg }]}>
+              <Ionicons name="time-outline" size={14} color={TIME_BADGE.fg} />
+              <Text style={[styles.badgeText, { color: TIME_BADGE.fg }]}>
+                {formatTime(recipe.cookTime).toUpperCase()}
+              </Text>
             </View>
-            <View style={styles.badge}>
-              <Ionicons name="hourglass-outline" size={13} color={Colors.textSecondary} />
-              <Text style={styles.badgeText}>Prep {formatTime(recipe.prepTime)}</Text>
+
+            {/* Prep time */}
+            <View style={[styles.badge, { backgroundColor: TIME_BADGE.bg }]}>
+              <Ionicons name="hourglass-outline" size={14} color={TIME_BADGE.fg} />
+              <Text style={[styles.badgeText, { color: TIME_BADGE.fg }]}>
+                PREP {formatTime(recipe.prepTime).toUpperCase()}
+              </Text>
             </View>
-            <View style={styles.badge}>
-              <Ionicons name="people-outline" size={13} color={Colors.textSecondary} />
-              <Text style={styles.badgeText}>{recipe.servings} servings</Text>
+
+            {/* Servings */}
+            <View style={[styles.badge, { backgroundColor: SERVES_BADGE.bg }]}>
+              <Ionicons name="people-outline" size={14} color={SERVES_BADGE.fg} />
+              <Text style={[styles.badgeText, { color: SERVES_BADGE.fg }]}>
+                SERVES {recipe.servings}
+              </Text>
             </View>
           </View>
 
@@ -362,17 +389,16 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: Radius.full,
-    backgroundColor: Colors.surface,
   },
 
   badgeText: {
-    fontFamily: FontFamily.body,
-    fontSize: FontSize.bodySmall,
-    color: Colors.textSecondary,
+    fontFamily: FontFamily.heading,
+    fontSize: 13,
+    lineHeight: 13,
   },
 
   // ── Description ───────────────────────────────────────────────────────────

@@ -57,7 +57,7 @@ The visual direction is **"The Graphic Editorial"** — bold, fashion-forward, p
 ### Typography
 
 > **Heading font:** Clash Grotesk Bold (`ClashGrotesk-Bold`) — Title Hero, Title Page, Subtitle, Heading, Subheading
-> **Heading Semibold font:** Clash Grotesk Semibold (`ClashGrotesk-Semibold`) — Medium-weight headings, filter chip labels (inactive), badge pill labels
+> **Heading Semibold font:** Clash Grotesk Semibold (`ClashGrotesk-Semibold`) — Medium-weight headings, filter chip labels (inactive)
 > **Body font:** NeueHaasDisplay-Light (`NeueHaasDisplay-Light`) — Body Base, Body Strong, Body Emphasis, Body Link, Body Small, Body Code
 
 Font files live in `assets/fonts/`. All three are registered in `app/_layout.tsx` via `useFonts` and exposed as `FontFamily.heading`, `FontFamily.headingSemibold`, and `FontFamily.body` in `constants/tokens.ts`.
@@ -90,7 +90,7 @@ The palette is a curated combination of deep forest green, warm off-white surfac
 | `background` | `#fffcf6` | Level 1 — the canvas, page background |
 | `surface` | `#f6f3ed` | Level 2 — layout blocks, cards, chip backgrounds |
 | `surfaceHigh` | `#f0eee6` | Level 3 — nested modules, alternative sections |
-| `primary` | `#317055` | Deep forest green — buttons, active states, accent |
+| `primary` | `#04492B` | Deep forest green — buttons, active states, accent |
 | `primaryDim` | `#236349` | Pressed/hover variant of primary |
 | `onPrimary` | `#ffffff` | Text and icons placed on a primary background |
 | `secondary` | `#B0255A` | Vivid pink — interactive elements (e.g. nope button ring) |
@@ -101,7 +101,7 @@ The palette is a curated combination of deep forest green, warm off-white surfac
 | `onTertiaryContainer` | `#1f1c00` | Text on tertiary container |
 | `textPrimary` | `#383834` | Main readable text (on-surface) |
 | `textSecondary` | `#66635d` | Captions, metadata (on-surface-variant) |
-| `accent` | `#317055` | Alias for primary — kept for backwards compatibility |
+| `accent` | `#04492B` | Alias for primary — kept for backwards compatibility |
 | `border` | `rgba(56, 56, 52, 0.15)` | Ghost border — accessibility fallback only, use sparingly |
 
 ### Border Radius
@@ -165,10 +165,10 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
 - `focusRing` (2px) on focused input fields
 - Decorative button rings (e.g. the nope button's secondary-coloured ring) — these are interactive design elements, not structural lines
 - Inactive filter chips — 1px `Colors.primary` stroke that communicates interactivity
-- Glassmorphism badge pills — 1px `rgba(255,255,255,0.30)` stroke to define the pill edge against the image
+- Glassmorphism pantry match badge pill — 1px `rgba(255,255,255,0.30)` stroke to define the pill edge against the image (standard metadata badges are solid-coloured, not glassmorphism)
 
 ### Buttons
-- **Primary:** `primary` background (`#317055`), `onPrimary` text (`#ffffff`), `Radius.full` (pill shape), ambient shadow
+- **Primary:** `primary` background (`#04492B`), `onPrimary` text (`#ffffff`), `Radius.full` (pill shape), ambient shadow
 - **Secondary / Ghost:** `surface` or `surfaceHigh` background, `textPrimary` text, `Radius.full`
 - **Nope action button:** 72×72px circle, `background` fill with a 2px `secondary` coloured ring, `secondary` coloured icon — decorative ring communicates the action, not a structural border
 - **Like action button:** 72×72px circle, `primary` background, `onPrimary` (white) heart icon
@@ -176,7 +176,7 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
 
 ### Chips & Filter Tags
 - **Inactive:** transparent fill, 1px `Colors.primary` stroke (`borderWidth: 1, borderColor: Colors.primary`), `Colors.primary` text, `FontFamily.headingSemibold`, `Radius.full`, subtle ambient shadow (`shadowOpacity: 0.08`)
-- **Active:** solid `Colors.primary` fill, no border (`borderWidth: 0`), `Colors.onPrimary` (white) text, `FontFamily.heading` (ClashGrotesk-Bold), `Radius.full`, slightly stronger shadow
+- **Active:** solid `Colors.primary` (`#04492B`) fill, no border (`borderWidth: 0`), `#D5FB2A` (lime) text, `FontFamily.heading` (ClashGrotesk-Bold), `Radius.full`, slightly stronger shadow
 - Horizontal padding: 20px minimum
 
 ### Input Fields
@@ -193,7 +193,13 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
   - Locations: `[0, 0.6, 1]` — transparent at top, 40% opacity at 60% down, 95% at bottom
   - Direction: `start={{ x:0, y:0 }}` → `end={{ x:0, y:1 }}`
 - **Card title:** uppercase (`toUpperCase()`), `fontSize: 36`, `fontWeight: bold`, `ClashGrotesk-Bold`, white (`#ffffff`), `lineHeight: 36 * 1.1`
-- **Metadata badges:** glassmorphism — `BlurView` with `intensity={60}`, `tint="light"`, `backgroundColor: 'rgba(255,255,255,0.30)'`, `borderWidth: 1`, `borderColor: 'rgba(255,255,255,0.30)'`, `overflow: 'hidden'`, `Radius.full`. Font: `FontFamily.headingSemibold` at `fontSize: 12`. White icons and text. Never solid-coloured backgrounds on image overlay badges.
+- **Metadata badges (cook time, difficulty, serves):** solid-coloured pill badges — NOT glassmorphism. Use `Radius.full`, `paddingHorizontal: 12`, `paddingVertical: 7`, `FontFamily.heading` (ClashGrotesk-Bold) at `fontSize: 12`, uppercase text. Colour spec:
+  - **Cook / Prep time:** background `#B8F9D7`, icon & text `#226248`, clock icon (`Ionicons time-outline`)
+  - **Easy:** background `#D5FB2A`, icon & text `#3A5500`, 1× `MaterialIcons bolt` icon
+  - **Medium:** background `#FBA42A`, icon & text `#4C310C`, 2× `MaterialIcons bolt` icons (second has `marginLeft: -5` to overlap)
+  - **Hard:** background `#FB2A2A`, icon & text `#FFE2E2`, 3× `MaterialIcons bolt` icons
+  - **Serves:** background `#F9B8F5`, icon & text `#4A3849`, people icon (`Ionicons people-outline`), label format `SERVES {n}`
+- **Pantry match badge** (shown only in pantry mode, alongside the standard badges): glassmorphism — `BlurView` `intensity={60}`, `tint="light"`, `backgroundColor: 'rgba(255,255,255,0.30)'`, `borderWidth: 1`, `borderColor: 'rgba(255,255,255,0.30)'`, `overflow: 'hidden'`, white icons and text
 - No divider lines between sections — use `surface` vs `surfaceHigh` containers or 32–48px vertical spacing instead
 
 ### Tab Bar

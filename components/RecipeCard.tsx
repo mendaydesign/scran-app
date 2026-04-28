@@ -23,16 +23,18 @@ import {
   FontFamily,
   FontSize,
   FontWeight,
-  LineHeight,
   Radius,
 } from '@/constants/tokens';
 
-// ─── Colours specific to the back-face pills ────────────────────────────────
-// These are not in the global design tokens (they're card-back-specific).
-const PILL_MINT_BG   = '#d4f0e4';
-const PILL_MINT_TEXT = '#1a6b42';
-const PILL_LIME_BG   = '#e8f76c';
-const PILL_LIME_TEXT = '#3a5500';
+// ─── Badge colour maps (spec colours from design) ────────────────────────────
+const DIFFICULTY_BADGE: Record<string, { bg: string; fg: string }> = {
+  Easy:   { bg: '#D5FB2A', fg: '#3A5500' },
+  Medium: { bg: '#FBA42A', fg: '#4C310C' },
+  Hard:   { bg: '#FB2A2A', fg: '#FFE2E2' },
+};
+const BOLT_COUNT: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 };
+const TIME_BADGE   = { bg: '#B8F9D7', fg: '#226248' };
+const SERVES_BADGE = { bg: '#F9B8F5', fg: '#4A3849' };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -137,20 +139,49 @@ export default function RecipeCard({
             </Text>
 
             <View style={styles.badgeRow}>
-              <BlurView intensity={60} tint="light" style={styles.badge}>
-                <Ionicons name="time-outline" size={14} color="#ffffff" />
-                <Text style={styles.badgeText}>{formatCookTime(recipe.cookTime)}</Text>
-              </BlurView>
+              {/* Cook time */}
+              <View style={[styles.badge, { backgroundColor: TIME_BADGE.bg }]}>
+                <Ionicons name="time-outline" size={14} color={TIME_BADGE.fg} />
+                <Text style={[styles.badgeText, { color: TIME_BADGE.fg }]}>
+                  {formatCookTime(recipe.cookTime).toUpperCase()}
+                </Text>
+              </View>
 
-              <BlurView intensity={60} tint="light" style={styles.badge}>
-                <Ionicons name="restaurant-outline" size={14} color="#ffffff" />
-                <Text style={styles.badgeText}>{recipe.difficulty}</Text>
-              </BlurView>
+              {/* Difficulty — bolt count matches level */}
+              {(() => {
+                const { bg, fg } = DIFFICULTY_BADGE[recipe.difficulty] ?? DIFFICULTY_BADGE.Easy;
+                const bolts = BOLT_COUNT[recipe.difficulty] ?? 1;
+                return (
+                  <View style={[styles.badge, { backgroundColor: bg }]}>
+                    {Array.from({ length: bolts }).map((_, i) => (
+                      <MaterialIcons
+                        key={i}
+                        name="bolt"
+                        size={14}
+                        color={fg}
+                        style={i > 0 ? { marginLeft: -5 } : undefined}
+                      />
+                    ))}
+                    <Text style={[styles.badgeText, { color: fg }]}>
+                      {recipe.difficulty.toUpperCase()}
+                    </Text>
+                  </View>
+                );
+              })()}
 
+              {/* Serves */}
+              <View style={[styles.badge, { backgroundColor: SERVES_BADGE.bg }]}>
+                <Ionicons name="people-outline" size={14} color={SERVES_BADGE.fg} />
+                <Text style={[styles.badgeText, { color: SERVES_BADGE.fg }]}>
+                  SERVES {recipe.servings}
+                </Text>
+              </View>
+
+              {/* Pantry match badge (shown in pantry mode only) */}
               {matchBadge && (
-                <BlurView intensity={60} tint="light" style={styles.badge}>
+                <BlurView intensity={60} tint="light" style={[styles.badge, styles.matchBadge]}>
                   <Ionicons name="basket-outline" size={14} color="#ffffff" />
-                  <Text style={styles.badgeText}>
+                  <Text style={[styles.badgeText, { color: '#ffffff' }]}>
                     {matchBadge.matched}/{matchBadge.total}
                   </Text>
                 </BlurView>
@@ -189,19 +220,35 @@ export default function RecipeCard({
 
             {/* Cook time + difficulty pills */}
             <View style={styles.backPillRow}>
-              <View style={[styles.backPill, { backgroundColor: PILL_MINT_BG }]}>
-                <MaterialIcons name="access-time" size={14} color={PILL_MINT_TEXT} />
-                <Text style={[styles.backPillText, { color: PILL_MINT_TEXT }]}>
-                  {formatCookTime(recipe.cookTime)}
+              {/* Cook time */}
+              <View style={[styles.backPill, { backgroundColor: TIME_BADGE.bg }]}>
+                <MaterialIcons name="access-time" size={14} color={TIME_BADGE.fg} />
+                <Text style={[styles.backPillText, { color: TIME_BADGE.fg }]}>
+                  {formatCookTime(recipe.cookTime).toUpperCase()}
                 </Text>
               </View>
 
-              <View style={[styles.backPill, { backgroundColor: PILL_LIME_BG }]}>
-                <MaterialIcons name="bolt" size={14} color={PILL_LIME_TEXT} />
-                <Text style={[styles.backPillText, { color: PILL_LIME_TEXT }]}>
-                  {recipe.difficulty}
-                </Text>
-              </View>
+              {/* Difficulty — bolt count matches level (1 = Easy, 2 = Medium, 3 = Hard) */}
+              {(() => {
+                const { bg, fg } = DIFFICULTY_BADGE[recipe.difficulty] ?? DIFFICULTY_BADGE.Easy;
+                const bolts = BOLT_COUNT[recipe.difficulty] ?? 1;
+                return (
+                  <View style={[styles.backPill, { backgroundColor: bg }]}>
+                    {Array.from({ length: bolts }).map((_, i) => (
+                      <MaterialIcons
+                        key={i}
+                        name="bolt"
+                        size={14}
+                        color={fg}
+                        style={i > 0 ? { marginLeft: -5 } : undefined}
+                      />
+                    ))}
+                    <Text style={[styles.backPillText, { color: fg }]}>
+                      {recipe.difficulty.toUpperCase()}
+                    </Text>
+                  </View>
+                );
+              })()}
             </View>
 
             {/* "Key Ingredients" heading + decorative rule */}
@@ -311,17 +358,19 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: Radius.full,
     overflow: 'hidden',
+  },
+
+  // Applied in addition to badge for the pantry match pill only
+  matchBadge: {
     backgroundColor: 'rgba(255,255,255,0.30)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.30)',
   },
 
   badgeText: {
-    fontFamily: FontFamily.headingSemibold,
+    fontFamily: FontFamily.heading,
     fontSize: 12,
-    lineHeight: FontSize.bodySmall * LineHeight.tight,
-    fontWeight: FontWeight.regular,
-    color: '#ffffff',
+    lineHeight: 12,
   },
 
   likeLabel: {
@@ -409,10 +458,9 @@ const styles = StyleSheet.create({
   },
 
   backPillText: {
-    fontFamily: FontFamily.headingSemibold,
+    fontFamily: FontFamily.heading,
     fontSize: 13,
     lineHeight: 13,
-    fontWeight: FontWeight.regular,
   },
 
   sectionHeadingRow: {

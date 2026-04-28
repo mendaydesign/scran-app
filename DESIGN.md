@@ -21,7 +21,8 @@ Treat the UI as a series of physical layers. We use Material-style tiers to defi
 
 ### Glass & Gradient (The Polish)
 To avoid a flat, "cheap" look, use **Glassmorphism** for floating headers or navigation overlays. Use `surface` colors at 70% opacity with a `20px` backdrop-blur. 
-- **Signature Textures:** For primary CTAs, apply a subtle linear gradient from `primary` (#317055) to `primary-dim` (#236349) at a 135-degree angle. This adds "soul" and depth to the high-contrast elements.
+- **Signature Textures:** For primary CTAs, apply a subtle linear gradient from `primary` (#04492B) to `primary-dim` (#236349) at a 135-degree angle. This adds "soul" and depth to the high-contrast elements.
+- **Glassmorphism scope:** Applied only to contextual overlay badges (e.g. pantry match indicator on recipe cards). Standard metadata badges (cook time, difficulty, serves) use solid-coloured pills — see the Metadata Badges spec below.
 
 ---
 
@@ -56,6 +57,19 @@ If accessibility requirements demand a container edge, use a **Ghost Border**: t
 - **Primary:** `primary` background with `on-primary` text. Apply the `xl` (3rem) roundedness for a "pill" shape.
 - **Secondary:** `secondary_container` background with `on-secondary_container` text.
 - **Interaction:** On hover, shift background to the `_dim` variant of the color.
+
+### Metadata Badge Pills (cook time, difficulty, serves)
+Solid-coloured pill badges used on recipe cards and the recipe detail page. Each badge type has a fixed background and foreground colour pairing. Font: `FontFamily.heading` (ClashGrotesk-Bold), `fontSize: 12`, uppercase text. Shape: `Radius.full`, `paddingHorizontal: 12`, `paddingVertical: 7`.
+
+| Badge | Background | Icon & Text | Icon |
+|-------|-----------|-------------|------|
+| Cook / Prep time | `#B8F9D7` | `#226248` | `Ionicons time-outline` / `hourglass-outline` |
+| Easy | `#D5FB2A` | `#3A5500` | 1× `MaterialIcons bolt` |
+| Medium | `#FBA42A` | `#4C310C` | 2× `MaterialIcons bolt` (second overlaps: `marginLeft: -5`) |
+| Hard | `#FB2A2A` | `#FFE2E2` | 3× `MaterialIcons bolt` |
+| Serves | `#F9B8F5` | `#4A3849` | `Ionicons people-outline` |
+
+Pantry match badges remain glassmorphism (`BlurView intensity={60}`, white text/icons) as they overlay the recipe card image.
 
 ### Chips & Tags
 Inspired by the reference image's "Sophisticated" and "Ethical" tags:

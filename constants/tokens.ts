@@ -99,7 +99,7 @@ export const Colors = {
   surfaceHigh:   '#f0eee6', // Level 3 — card backgrounds / nested modules
 
   // ── Primary green ────────────────────────────────────────────────────────
-  primary:       '#317055', // Deep forest green — buttons, active states, accent
+  primary:       '#04492B', // Deep forest green — buttons, active states, accent
   primaryDim:    '#236349', // Pressed / hover variant of primary
   onPrimary:     '#ffffff', // Text / icons on a primary background
 
@@ -118,7 +118,7 @@ export const Colors = {
   textSecondary: '#66635d', // on-surface-variant — captions, metadata
 
   // ── Accent alias (maps to primary — kept for existing references) ────────
-  accent:        '#317055',
+  accent:        '#04492B',
 
   // ── Ghost border (15% opacity outline-variant — accessibility fallback) ──
   // Use sparingly; prefer surface-tier shifts over explicit borders.

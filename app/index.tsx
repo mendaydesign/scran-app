@@ -1,10 +1,23 @@
-// Root index — redirects immediately to the Discover tab.
-// This file must exist so Expo Router has a handler for the '/' route,
-// but all real content lives under (tabs)/discover.tsx.
-// Redirect uses router.replace so the back button never returns here.
+// Root index — checks whether the user has completed onboarding.
+// First launch → /onboarding. Returning user → /discover.
+// Returns null while the async check runs; the splash screen has already
+// hidden by the time this executes (fonts are loaded in _layout.tsx first).
 
-import { Redirect } from 'expo-router';
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const ONBOARDING_KEY = 'onboarding_complete';
 
 export default function Index() {
-  return <Redirect href="/discover" />;
+  const router = useRouter();
+
+  useEffect(() => {
+    (async () => {
+      const seen = await AsyncStorage.getItem(ONBOARDING_KEY);
+      router.replace(seen ? '/discover' : '/onboarding');
+    })();
+  }, []);
+
+  return null;
 }

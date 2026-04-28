@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
   chipTextActive: {
     fontFamily: FontFamily.heading,
     fontWeight: FontWeight.bold,
-    color: Colors.onPrimary,
+    color: '#D5FB2A',
   },
 });
