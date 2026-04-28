@@ -41,6 +41,9 @@
 - All slides share a `#04492B` forest-green background with a `#FDFAF4` cream panel covering the top 60% of the screen (30px bottom corner radius)
 - Persistent overlays: app logomark (SVG, centred at top of cream panel) and Skip CTA (top-right, `#04492B` text)
 - Navigation is button-only (`scrollEnabled={false}` on FlatList) — Next pill advances slides, GO! completes onboarding
+- **Back button animation:** on leaving slide 1, a Back button animates in from the left (width 0 → 50% of row) while Next shrinks to the remaining 50%. Easing: `Easing.bezier(0.92, -0.35, 0, 1.33)` over 500ms. Back button fades from 0→100% opacity over the first half of the animation. Reverses when returning to slide 1. Both button wrappers have a fixed `height: 56` to prevent any Y-axis movement during the transition.
+- **Back button style:** `Colors.primary` (`#04492B`) background, 2px `#D5FB2A` lime border, lime text — inverse of the lime Next button
+- **Animation implementation:** `react-native-reanimated` `useSharedValue` + `withTiming` + `interpolate` with `Extrapolation.CLAMP` (prevents the bezier overshoot from producing negative widths)
 - Slide assets live in `assets/onboarding assets/` and must be supplied at 1×, @2×, @3× for sharp rendering (see image density rules below)
 - **Image density rule:** export at 393px (1×), 786px (2×), 1179px (3×) width. Name files `image.png`, `image@2x.png`, `image@3x.png` — Metro auto-selects the correct variant
 - `app/index.tsx` checks AsyncStorage on launch and routes to `/onboarding` (first time) or `/discover` (returning user). During active development the check is bypassed so onboarding always shows — restore it before release

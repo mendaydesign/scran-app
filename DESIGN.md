@@ -99,7 +99,9 @@ Full-screen first-launch flow. Key layout rules:
 - **Skip CTA:** top-right, `#04492B` text (legible against the cream panel)
 - **Headline:** `FontFamily.heading`, 36px, white — below the cream panel
 - **Body copy:** `FontFamily.body`, 16px, `rgba(255,255,255,0.70)` — below headline
-- **CTA button:** `#D5FB2A` lime full-width pill, `Radius.full`, dark green text — pinned to bottom
+- **CTA button (slide 1):** `#D5FB2A` lime full-width pill, `Radius.full`, dark green text — pinned to bottom
+- **CTA buttons (slides 2–3):** Back + Next sit side-by-side at 50% width each. Back: `#04492B` fill, 2px `#D5FB2A` border, lime text. Next: unchanged lime pill. Both wrappers are fixed at `height: 56` so the row never shifts on the Y axis.
+- **Back button entrance animation:** width 0 → 50%, opacity 0 → 100%, Next shrinks from 100% → 50%. Easing: `bezier(0.92, -0.35, 0, 1.33)` over 500ms. Uses `Extrapolation.CLAMP` to prevent negative widths from the bezier overshoot.
 - **Dot indicators:** `#D5FB2A` active pill (24px wide), `rgba(255,255,255,0.30)` inactive — below CTA button
 
 ---

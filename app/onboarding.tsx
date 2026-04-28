@@ -17,6 +17,14 @@ import {
   Dimensions,
   ListRenderItem,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -26,6 +34,12 @@ import { Colors, FontFamily, FontSize, Radius } from '@/constants/tokens';
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const ONBOARDING_KEY = 'onboarding_complete';
 const PANEL_H = SCREEN_H * 0.60;
+
+// Button animation layout constants
+const BTN_PADDING_H = 28; // matches bottomBar paddingHorizontal
+const BTN_GAP       = 10; // gap between Back and Next when both visible
+const BTN_ROW_W     = SCREEN_W - BTN_PADDING_H * 2;
+const BTN_HALF_W    = (BTN_ROW_W - BTN_GAP) / 2;
 
 // ─── Slide data ───────────────────────────────────────────────────────────────
 
@@ -328,19 +342,49 @@ export default function Onboarding() {
   const isLast = currentIndex === SLIDES.length - 1;
   const slide  = SLIDES[currentIndex];
 
+  // 0 = solo Next (slide 1), 1 = Back + Next (slides 2–3)
+  const btnAnim = useSharedValue(0);
+
+  // Back button wrapper: grows from 0 → BTN_HALF_W with a right margin gap.
+  // Extrapolation.CLAMP prevents the bezier overshoot from producing negative
+  // widths (which would cause a layout glitch mid-animation).
+  // Opacity fades in over the first half of the animation.
+  const backWrapStyle = useAnimatedStyle(() => ({
+    width:       interpolate(btnAnim.value, [0, 1],   [0, BTN_HALF_W], Extrapolation.CLAMP),
+    marginRight: interpolate(btnAnim.value, [0, 1],   [0, BTN_GAP],    Extrapolation.CLAMP),
+    opacity:     interpolate(btnAnim.value, [0, 0.5], [0, 1],          Extrapolation.CLAMP),
+  }));
+
+  // Next button wrapper: shrinks from full row width → BTN_HALF_W
+  const nextWrapStyle = useAnimatedStyle(() => ({
+    width: interpolate(btnAnim.value, [0, 1], [BTN_ROW_W, BTN_HALF_W], Extrapolation.CLAMP),
+  }));
+
+  const SPRING = {
+    duration: 500,
+    easing: Easing.bezier(0.92, -0.35, 0, 1.33),
+  } as const;
+
   const complete = async () => {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
     router.replace('/discover');
   };
 
   const handleNext = () => {
-    if (isLast) {
-      complete();
-      return;
-    }
+    if (isLast) { complete(); return; }
     const next = currentIndex + 1;
     listRef.current?.scrollToIndex({ index: next, animated: true });
     setCurrentIndex(next);
+    // Animate back button in when leaving slide 1 for the first time
+    if (currentIndex === 0) btnAnim.value = withTiming(1, SPRING);
+  };
+
+  const handleBack = () => {
+    const prev = currentIndex - 1;
+    listRef.current?.scrollToIndex({ index: prev, animated: true });
+    setCurrentIndex(prev);
+    // Animate back button out when returning to slide 1
+    if (prev === 0) btnAnim.value = withTiming(0, SPRING);
   };
 
   const renderItem: ListRenderItem<SlideData> = ({ item }) => {
@@ -405,14 +449,30 @@ export default function Onboarding() {
         style={[styles.bottomBar, { paddingBottom: insets.bottom + 20 }]}
         pointerEvents="box-none"
       >
-        <TouchableOpacity
-          style={styles.ctaButton}
-          onPress={handleNext}
-          accessibilityRole="button"
-          accessibilityLabel={isLast ? 'Get started' : 'Next slide'}
-        >
-          <Text style={styles.ctaText}>{isLast ? 'GO!' : 'Next'}</Text>
-        </TouchableOpacity>
+        {/* Button row — Back grows in from the left as Next shrinks */}
+        <View style={styles.buttonRow}>
+          <Animated.View style={[styles.backWrap, backWrapStyle]}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBack}
+              accessibilityRole="button"
+              accessibilityLabel="Go to previous slide"
+            >
+              <Text style={styles.backText}>Back</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <Animated.View style={[styles.nextWrap, nextWrapStyle]}>
+            <TouchableOpacity
+              style={styles.ctaButton}
+              onPress={handleNext}
+              accessibilityRole="button"
+              accessibilityLabel={isLast ? 'Get started' : 'Next slide'}
+            >
+              <Text style={styles.ctaText}>{isLast ? 'GO!' : 'Next'}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
 
         <View style={styles.dotsRow}>
           {SLIDES.map((_, i) => (
@@ -510,10 +570,49 @@ const styles = StyleSheet.create({
     gap: 14,
   },
 
+  // ── Button row ─────────────────────────────────────────────────────────────
+  // No alignItems — default 'stretch' lets wrappers fill the row height.
+  buttonRow: {
+    flexDirection: 'row',
+  },
+
+  // Both wrappers have a fixed height (56px) so the layout engine never
+  // recalculates the Y axis during the width animation.
+  backWrap: {
+    height: 56,
+    overflow: 'hidden',
+  },
+
+  nextWrap: {
+    height: 56,
+  },
+
+  // Back button — dark green fill, lime border + text.
+  // height:'100%' fills the fixed-height wrapper; no paddingVertical so the
+  // button height is always exactly 56px regardless of animation state.
+  backButton: {
+    width: '100%',
+    height: '100%',
+    borderRadius: Radius.full,
+    borderWidth: 2,
+    borderColor: '#D5FB2A',
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  backText: {
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.bodyBase,
+    lineHeight: FontSize.bodyBase,
+    color: '#D5FB2A',
+  },
+
   ctaButton: {
+    width: '100%',
+    height: '100%',
     backgroundColor: '#D5FB2A',
     borderRadius: Radius.full,
-    paddingVertical: 18,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
