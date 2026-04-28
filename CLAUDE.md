@@ -36,6 +36,15 @@
 - A collection of all right-swiped recipes
 - Users can view full recipe details from here
 
+### 5. Onboarding
+- 3-slide first-launch flow shown only once (persisted via `AsyncStorage` key `'onboarding_complete'`)
+- All slides share a `#04492B` forest-green background with a `#FDFAF4` cream panel covering the top 60% of the screen (30px bottom corner radius)
+- Persistent overlays: app logomark (SVG, centred at top of cream panel) and Skip CTA (top-right, `#04492B` text)
+- Navigation is button-only (`scrollEnabled={false}` on FlatList) — Next pill advances slides, GO! completes onboarding
+- Slide assets live in `assets/onboarding assets/` and must be supplied at 1×, @2×, @3× for sharp rendering (see image density rules below)
+- **Image density rule:** export at 393px (1×), 786px (2×), 1179px (3×) width. Name files `image.png`, `image@2x.png`, `image@3x.png` — Metro auto-selects the correct variant
+- `app/index.tsx` checks AsyncStorage on launch and routes to `/onboarding` (first time) or `/discover` (returning user). During active development the check is bypassed so onboarding always shows — restore it before release
+
 ---
 
 ## Tech Stack
@@ -46,7 +55,8 @@
 - **Navigation:** Expo Router (file-based routing)
 - **State management:** Keep it simple — React useState/useContext. No Redux.
 - **Data:** Local JSON files for MVP. No backend database needed yet.
-- **Key installed packages:** `expo-image`, `expo-linear-gradient`, `expo-blur`, `react-native-reanimated`, `react-native-gesture-handler`
+- **Key installed packages:** `expo-image`, `expo-linear-gradient`, `expo-blur`, `react-native-reanimated`, `react-native-gesture-handler`, `react-native-svg`, `react-native-svg-transformer`
+- **SVG support:** `metro.config.js` routes `.svg` files through `react-native-svg-transformer`. Import SVGs as React components: `import Logo from '@/assets/onboarding assets/Logo.svg'` then render as `<Logo width={x} height={y} />`
 
 ---
 
@@ -58,7 +68,7 @@ The visual direction is **"The Graphic Editorial"** — bold, fashion-forward, p
 
 > **Heading font:** Clash Grotesk Bold (`ClashGrotesk-Bold`) — Title Hero, Title Page, Subtitle, Heading, Subheading
 > **Heading Semibold font:** Clash Grotesk Semibold (`ClashGrotesk-Semibold`) — Medium-weight headings, filter chip labels (inactive)
-> **Body font:** NeueHaasDisplay-Light (`NeueHaasDisplay-Light`) — Body Base, Body Strong, Body Emphasis, Body Link, Body Small, Body Code
+> **Body font:** Neue Haas Display Medium (`NeueHaasDisplay-Medium`) — Body Base, Body Strong, Body Emphasis, Body Link, Body Small, Body Code
 
 Font files live in `assets/fonts/`. All three are registered in `app/_layout.tsx` via `useFonts` and exposed as `FontFamily.heading`, `FontFamily.headingSemibold`, and `FontFamily.body` in `constants/tokens.ts`.
 
@@ -236,7 +246,8 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
 /app                  → Screens and navigation (Expo Router)
 /components           → Reusable UI components (RecipeCard, SwipeStack, PantryInput, etc.)
 /constants            → Design tokens, category lists, mock data
-/assets/fonts         → Custom font files (ClashGrotesk-Bold.otf, ClashGrotesk-Semibold.otf, NeueHaasDisplayLight.ttf)
+/assets/fonts         → Custom font files (ClashGrotesk-Bold.otf, ClashGrotesk-Semibold.otf, NeueHaasDisplayMediu.ttf)
+/assets/onboarding assets → Onboarding screen images (1×/2×/3× PNGs) and SVG logomark
 /assets/images        → App icons and splash assets
 /assets/Recipe-images → Recipe photography
 /types                → TypeScript type definitions

@@ -13,10 +13,11 @@ export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    (async () => {
-      const seen = await AsyncStorage.getItem(ONBOARDING_KEY);
-      router.replace(seen ? '/discover' : '/onboarding');
-    })();
+    // DEV: always show onboarding so changes can be previewed on every load.
+    // Restore the AsyncStorage check before testing/release:
+    //   const seen = await AsyncStorage.getItem(ONBOARDING_KEY);
+    //   router.replace(seen ? '/discover' : '/onboarding');
+    router.replace('/onboarding');
   }, []);
 
   return null;

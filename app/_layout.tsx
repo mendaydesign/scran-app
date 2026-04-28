@@ -23,7 +23,7 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     'ClashGrotesk-Bold':      require('../assets/fonts/ClashGrotesk-Bold.otf'),
     'ClashGrotesk-Semibold':  require('../assets/fonts/ClashGrotesk-Semibold.otf'),
-    'NeueHaasDisplay-Light':  require('../assets/fonts/NeueHaasDisplayLight.ttf'),
+    'NeueHaasDisplay-Medium': require('../assets/fonts/NeueHaasDisplayMediu.ttf'),
   });
 
   useEffect(() => {

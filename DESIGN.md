@@ -29,8 +29,9 @@ To avoid a flat, "cheap" look, use **Glassmorphism** for floating headers or nav
 ## 3. Typography: The Expressive Voice
 Typography is the primary visual driver of this system. We utilize two distinct personalities:
 
-- **The Display Voice (Space Grotesk):** Used for `display` and `headline` tiers. This is a heavy, grotesque-inspired face that should feel "too big" for the container. It conveys confidence and a fashion-forward edge. Use tight letter-spacing (-0.02em) for `display-lg`.
-- **The Functional Voice (Manrope):** Used for `title`, `body`, and `labels`. Manrope provides a clean, geometric balance to the loud headlines. It ensures that even in an eclectic environment, the core information remains legible and accessible.
+- **The Display Voice (Clash Grotesk Bold):** Used for `display` and `headline` tiers (`FontFamily.heading`). This is a heavy, grotesque-inspired face that should feel "too big" for the container. It conveys confidence and a fashion-forward edge. Use tight letter-spacing (-0.02em) for `display-lg`.
+- **The Semibold Voice (Clash Grotesk Semibold):** Used for medium-weight headings and inactive filter chip labels (`FontFamily.headingSemibold`). Provides weight between Bold and body copy.
+- **The Functional Voice (Neue Haas Display Medium):** Used for `title`, `body`, and `labels` (`FontFamily.body`). Provides a clean, geometric balance to the loud headlines. Ensures that even in an eclectic environment, the core information remains legible and accessible.
 
 ---
 
@@ -88,7 +89,22 @@ Inspired by the reference image's "Sophisticated" and "Ethical" tags:
 
 ---
 
-## 6. Do's and Don'ts
+## 7. Onboarding Screen Pattern
+
+Full-screen first-launch flow. Key layout rules:
+- **Background:** `primary` (`#04492B`) forest green fills the entire screen
+- **Cream panel:** `#FDFAF4`, top 60% of screen height, `borderBottomLeftRadius: 30`, `borderBottomRightRadius: 30` — static, never slides
+- **Illustration images:** bottom-justified within the cream panel, 88% screen width, `contentFit="contain"`. Supply all assets at 1×/2×/3× density
+- **Logomark:** SVG centred at the top of the cream panel — static across all slides
+- **Skip CTA:** top-right, `#04492B` text (legible against the cream panel)
+- **Headline:** `FontFamily.heading`, 36px, white — below the cream panel
+- **Body copy:** `FontFamily.body`, 16px, `rgba(255,255,255,0.70)` — below headline
+- **CTA button:** `#D5FB2A` lime full-width pill, `Radius.full`, dark green text — pinned to bottom
+- **Dot indicators:** `#D5FB2A` active pill (24px wide), `rgba(255,255,255,0.30)` inactive — below CTA button
+
+---
+
+## 8. Do's and Don'ts
 
 ### Do:
 - **Embrace Asymmetry:** Offset text blocks or let images bleed off one side of the container.
