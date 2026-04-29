@@ -27,7 +27,7 @@ import ShoppingList from '@/components/ShoppingList';
 export default function PantryScreen() {
   const { pantryItems, addItem, removeItem, clearPantry, matchBadgeEnabled, toggleMatchBadge } =
     usePantry();
-  const { shoppingList } = useShoppingList();
+  const { totalUncheckedCount } = useShoppingList();
 
   // Which sub-section is active
   const [activeTab, setActiveTab] = useState<'pantry' | 'shopping'>('pantry');
@@ -80,7 +80,7 @@ export default function PantryScreen() {
   };
 
   // ── Shopping list badge count for the tab label ───────────────────────────
-  const shoppingUnchecked = shoppingList.filter((i) => !i.checked).length;
+  const shoppingUnchecked = totalUncheckedCount;
 
   // ── Render ────────────────────────────────────────────────────────────────
 

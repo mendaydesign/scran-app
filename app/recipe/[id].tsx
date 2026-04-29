@@ -4,7 +4,15 @@
 // Back and save buttons float over the hero image.
 
 import { useRef, useState, useEffect } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  ScrollView, View, Text, TextInput, TouchableOpacity, Modal,
+  KeyboardAvoidingView, Platform, Dimensions, StyleSheet,
+} from 'react-native';
+import Animated, {
+  useSharedValue, useAnimatedStyle, withTiming,
+  runOnJS, interpolate, Extrapolation, Easing,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +26,8 @@ import { useShoppingList } from '@/context/ShoppingListContext';
 import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
 import { ingredientMatches } from '@/utils/ingredientUtils';
 import type { Difficulty } from '@/types/recipe';
+
+const { height: SCREEN_H } = Dimensions.get('window');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,19 +59,43 @@ export default function RecipeDetail() {
   const insets = useSafeAreaInsets();
   const { isSaved, saveRecipe, unsaveRecipe } = useSavedRecipes();
   const { pantryItems } = usePantry();
-  const { addItems } = useShoppingList();
+  const { lists, addItemsToList, createList } = useShoppingList();
 
   const [activeTab, setActiveTab] = useState<Tab>('ingredients');
 
   // Toast state — shows a brief confirmation after adding to the shopping list
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [toast, setToast]                     = useState<string | null>(null);
+  const toastTimerRef                          = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // List-picker modal state
+  const [pickerVisible, setPickerVisible]     = useState(false);
+  const [newListName, setNewListName]         = useState('');
+  const [creatingNew, setCreatingNew]         = useState(false);
+
+  // Sheet starts off-screen; sheetTranslateY drives both position and overlay opacity.
+  // All hooks must be declared before any early returns (React rules).
+  const sheetTranslateY = useSharedValue(SCREEN_H);
+
+  const overlayAnimStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(sheetTranslateY.value, [0, SCREEN_H], [1, 0], Extrapolation.CLAMP),
+  }));
+
+  const sheetAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: sheetTranslateY.value }],
+  }));
 
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  // Slide sheet up (and fade overlay in) whenever the modal becomes visible
+  useEffect(() => {
+    if (pickerVisible) {
+      sheetTranslateY.value = SCREEN_H; // ensure starting position
+      sheetTranslateY.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) });
+    }
+  }, [pickerVisible]);
 
   const recipe = MOCK_RECIPES.find((r) => r.id === id);
 
@@ -76,35 +110,87 @@ export default function RecipeDetail() {
     );
   }
 
-  const saved = isSaved(recipe.id);
-  const diffBadge = DIFFICULTY_BADGE[recipe.difficulty];
-  const diffBolts = BOLT_COUNT[recipe.difficulty];
+  const saved      = isSaved(recipe.id);
+  const diffBadge  = DIFFICULTY_BADGE[recipe.difficulty];
+  const diffBolts  = BOLT_COUNT[recipe.difficulty];
 
-  const handleAddToShoppingList = () => {
-    const missingIngredients = recipe.ingredients.filter(
-      (ingredient) =>
-        !pantryItems.some(
-          (pantryItem) =>
-            pantryItem.trim().length > 0 && ingredientMatches(ingredient, pantryItem),
-        ),
+  // Animate sheet down (and overlay out), then tear down modal state
+  const dismissPicker = () => {
+    setPickerVisible(false);
+    setCreatingNew(false);
+    setNewListName('');
+  };
+
+  const closeModal = () => {
+    sheetTranslateY.value = withTiming(
+      SCREEN_H,
+      { duration: 300, easing: Easing.in(Easing.cubic) },
+      () => runOnJS(dismissPicker)(),
     );
+  };
 
-    const added = addItems(
-      missingIngredients.map((name) => ({
-        name,
-        recipeId: recipe.id,
-        recipeName: recipe.title,
-      })),
-    );
+  // Pan gesture attached to the drag handle only so ScrollView / TextInput
+  // inside the sheet still work normally
+  const dragGesture = Gesture.Pan()
+    .activeOffsetY(5)
+    .onUpdate((e) => {
+      if (e.translationY > 0) sheetTranslateY.value = e.translationY;
+    })
+    .onEnd((e) => {
+      if (e.translationY > 80 || e.velocityY > 500) {
+        sheetTranslateY.value = withTiming(SCREEN_H, { duration: 300 }, () =>
+          runOnJS(dismissPicker)(),
+        );
+      } else {
+        sheetTranslateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
+      }
+    });
 
-    const message =
-      added === 0
-        ? 'All ingredients already in your list'
-        : `Added ${added} item${added !== 1 ? 's' : ''} to shopping list`;
+  // Build the list of missing ingredients (not already in pantry)
+  const missingIngredients = recipe.ingredients.filter(
+    (ingredient) =>
+      !pantryItems.some(
+        (pantryItem) =>
+          pantryItem.trim().length > 0 && ingredientMatches(ingredient, pantryItem),
+      ),
+  );
 
+  const showToast = (message: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(message);
     toastTimerRef.current = setTimeout(() => setToast(null), 2500);
+  };
+
+  const addToList = (listId: string) => {
+    const added = addItemsToList(
+      missingIngredients.map((name) => ({ name, recipeId: recipe.id, recipeName: recipe.title })),
+      listId,
+    );
+    showToast(
+      added === 0
+        ? 'All ingredients already in that list'
+        : `Added ${added} item${added !== 1 ? 's' : ''} to shopping list`,
+    );
+    closeModal();
+  };
+
+  const handleAddToShoppingList = () => {
+    if (lists.length === 0) {
+      // No lists yet — open picker in "create new" mode immediately
+      setCreatingNew(true);
+      setPickerVisible(true);
+    } else {
+      setCreatingNew(false);
+      setPickerVisible(true);
+    }
+  };
+
+  const handleCreateAndAdd = () => {
+    const name = newListName.trim() || 'New list';
+    const newId = createList(name);
+    // createList is synchronous in terms of returning the id, but state update
+    // is async — call addToList via setTimeout so the new list exists first.
+    setTimeout(() => addToList(newId), 0);
   };
 
   // ── Tab content ─────────────────────────────────────────────────────────────
@@ -302,10 +388,110 @@ export default function RecipeDetail() {
           style={[styles.toast, { bottom: insets.bottom + 24 }]}
           pointerEvents="none"
         >
-          <Ionicons name="checkmark-circle" size={18} color={Colors.onPrimary} />
           <Text style={styles.toastText}>{toast}</Text>
+          <View style={styles.toastIcon}>
+            <Ionicons name="checkmark" size={18} color={Colors.primary} />
+          </View>
         </View>
       )}
+
+      {/* List picker modal — custom animation so the overlay fades independently
+          of the sheet slide-up, and the sheet can be dragged to dismiss */}
+      <Modal
+        visible={pickerVisible}
+        transparent
+        animationType="none"
+        onRequestClose={closeModal}
+      >
+        {/* KeyboardAvoidingView pushes the sheet above the keyboard when
+            the user is naming a new list */}
+        <KeyboardAvoidingView
+          style={{ flex: 1, justifyContent: 'flex-end' }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          {/* Dimming overlay — fades from 0→1 as sheetTranslateY goes SCREEN_H→0 */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.pickerOverlay, overlayAnimStyle]}
+            pointerEvents="box-none"
+          >
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={closeModal}
+            />
+          </Animated.View>
+
+          {/* Sheet — slides up from below */}
+          <Animated.View
+            style={[styles.pickerSheet, sheetAnimStyle, { paddingBottom: insets.bottom + 20 }]}
+          >
+            {/* Drag handle — pan gesture is scoped here only so ScrollView
+                and TextInput elsewhere in the sheet are not affected */}
+            <GestureDetector gesture={dragGesture}>
+              <View style={styles.pickerDragArea}>
+                <View style={styles.pickerHandle} />
+              </View>
+            </GestureDetector>
+
+            <Text style={styles.pickerTitle}>Save Ingredients</Text>
+
+            {/* Existing lists */}
+            {!creatingNew && (
+              <ScrollView
+                style={styles.pickerListScroll}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
+                {lists.map((list) => {
+                  const unchecked = list.items.filter((i) => !i.checked).length;
+                  return (
+                    <TouchableOpacity
+                      key={list.id}
+                      style={styles.pickerListRow}
+                      onPress={() => addToList(list.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.pickerListInfo}>
+                        <Text style={styles.pickerListName}>{list.name}</Text>
+                        {unchecked > 0 && (
+                          <Text style={styles.pickerListCount}>{unchecked} item{unchecked !== 1 ? 's' : ''}</Text>
+                        )}
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            {/* Name input — shown when creating a new list */}
+            {creatingNew && (
+              <TextInput
+                style={styles.pickerInput}
+                value={newListName}
+                onChangeText={setNewListName}
+                placeholder="Title New List..."
+                placeholderTextColor={Colors.textSecondary}
+                autoFocus
+                autoCapitalize="words"
+                returnKeyType="done"
+                onSubmitEditing={handleCreateAndAdd}
+              />
+            )}
+
+            {/* Lime CTA — picker: open create state; create state: confirm */}
+            <TouchableOpacity
+              style={styles.pickerCreateBtn}
+              onPress={creatingNew ? handleCreateAndAdd : () => setCreatingNew(true)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={creatingNew ? 'Create list and add ingredients' : 'Create a new shopping list'}
+            >
+              <Text style={styles.pickerCreateBtnText}>Create New List</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Floating back button */}
       <TouchableOpacity
@@ -591,11 +777,11 @@ const styles = StyleSheet.create({
     right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: Colors.textPrimary,
+    backgroundColor: Colors.primary,
     borderRadius: Radius.full,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingLeft: 24,
+    paddingRight: 12,
     shadowColor: '#383834',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.20,
@@ -604,10 +790,21 @@ const styles = StyleSheet.create({
   },
 
   toastText: {
-    fontFamily: FontFamily.headingSemibold,
-    fontSize: FontSize.bodySmall,
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.bodyBase,
     color: Colors.onPrimary,
     flex: 1,
+  },
+
+  // Lime circle with forest-green tick — sits at the right of the toast bar
+  toastIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#D5FB2A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
   },
 
   // ── Floating buttons ──────────────────────────────────────────────────────
@@ -644,5 +841,111 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.body,
     fontSize: FontSize.bodyBase,
     color: Colors.accent,
+  },
+
+  // ── List picker modal ─────────────────────────────────────────────────────
+  // The overlay is absoluteFill; its opacity is driven by sheetTranslateY
+  // via interpolate — no separate animation needed.
+  pickerOverlay: {
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+
+  pickerSheet: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: Radius.r400,
+    borderTopRightRadius: Radius.r400,
+    paddingHorizontal: 24,
+  },
+
+  // Hit area for the drag gesture — wider than the visible pill so it's
+  // easy to grab. Centres the pill horizontally.
+  pickerDragArea: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+
+  pickerHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.border,
+  },
+
+  pickerTitle: {
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.heading,
+    color: Colors.textPrimary,
+    marginBottom: 16,
+    marginTop: 4,
+  },
+
+  // Scrollable area for existing list rows — capped so the sheet doesn't
+  // grow past the midpoint of the screen on long lists.
+  pickerListScroll: {
+    maxHeight: 280,
+  },
+
+  pickerListRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: Radius.r400,
+    backgroundColor: Colors.surface,
+    marginBottom: 8,
+  },
+
+  pickerListInfo: {
+    flex: 1,
+  },
+
+  pickerListName: {
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.bodyBase,
+    color: Colors.textPrimary,
+  },
+
+  pickerListCount: {
+    fontFamily: FontFamily.body,
+    fontSize: FontSize.bodySmall,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+
+  // Text input shown when naming a new list
+  pickerInput: {
+    height: 56,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.r200,
+    paddingHorizontal: 20,
+    fontSize: FontSize.bodyBase,
+    fontFamily: FontFamily.body,
+    color: Colors.textPrimary,
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.primary,
+    marginBottom: 16,
+  },
+
+  // Lime pill CTA — matches the "Create a new shopping list" button style
+  // used throughout the app. Doubles as the confirm button in create mode.
+  pickerCreateBtn: {
+    backgroundColor: '#D5FB2A',
+    borderRadius: Radius.full,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+
+  pickerCreateBtnText: {
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.bodyBase,
+    color: Colors.primary,
   },
 });

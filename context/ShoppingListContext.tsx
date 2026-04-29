@@ -1,12 +1,13 @@
-// ShoppingListContext — global store for the user's shopping list.
-// Each item tracks its clean display name, checked state, shopping category,
-// and which recipe added it (if any).
+// ShoppingListContext — manages multiple named shopping lists.
 //
-// addItems() strips quantities/units from recipe ingredient strings, assigns a
-// category, deduplicates against the current list, and returns the count of
-// items actually added so the caller can show a confirmation toast.
+// Each ShoppingListGroup has a name (e.g. "Weekly Shop") and contains
+// ShoppingListItems. Items track their clean display name, checked state,
+// shopping category, and which recipe contributed them.
+//
+// addItemsToList() strips quantities/units, assigns a category, deduplicates
+// within the target list, and returns the count added for toast feedback.
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import {
   extractIngredientName,
@@ -20,24 +21,34 @@ export interface ShoppingListItem {
   id: string;
   name: string;         // clean display name, e.g. "Chicken breast"
   checked: boolean;
-  category: string;     // shopping category, e.g. "Meat & Fish", "Fresh Produce"
-  recipeId?: string;    // which recipe contributed this item (if any)
-  recipeName?: string;  // display name for the recipe attribution badge
+  category: string;     // e.g. "Meat & Fish", "Fresh Produce"
+  recipeId?: string;
+  recipeName?: string;
+}
+
+export interface ShoppingListGroup {
+  id: string;
+  name: string;
+  createdAt: number;
+  items: ShoppingListItem[];
 }
 
 interface ShoppingListContextValue {
-  shoppingList: ShoppingListItem[];
-  // Bulk-add items from a recipe. Strips quantities/units from each name,
-  // assigns a category, and skips duplicates. Returns count added.
-  addItems: (
+  lists: ShoppingListGroup[];
+  totalUncheckedCount: number;
+  // Create a new named list. Returns the new list's id.
+  createList: (name: string) => string;
+  deleteList: (listId: string) => void;
+  // Bulk-add recipe ingredients to a specific list. Returns count added.
+  addItemsToList: (
     items: Array<{ name: string; recipeId?: string; recipeName?: string }>,
+    listId: string,
   ) => number;
-  // Add a single item typed manually by the user.
-  addManualItem: (name: string) => void;
-  toggleItem: (id: string) => void;
-  removeItem: (id: string) => void;
-  // Remove all checked items from the list.
-  clearChecked: () => void;
+  // Add a single manually typed item to a specific list.
+  addManualItemToList: (name: string, listId: string) => void;
+  toggleItem: (listId: string, itemId: string) => void;
+  removeItem: (listId: string, itemId: string) => void;
+  clearChecked: (listId: string) => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -47,68 +58,120 @@ const ShoppingListContext = createContext<ShoppingListContextValue | null>(null)
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function ShoppingListProvider({ children }: { children: ReactNode }) {
-  const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
+  const [lists, setLists] = useState<ShoppingListGroup[]>([]);
 
-  const addItems = (
-    items: Array<{ name: string; recipeId?: string; recipeName?: string }>,
-  ): number => {
-    // Deduplicate against the current list using normalised matching so that
-    // "400g spaghetti" won't re-add a "Spaghetti" already on the list.
-    const toAdd = items.filter(
-      (item) => !shoppingList.some((s) => ingredientMatches(item.name, s.name)),
-    );
-    if (toAdd.length === 0) return 0;
+  // Total unchecked items across all lists — used by the pantry tab badge.
+  const totalUncheckedCount = useMemo(
+    () => lists.reduce((sum, list) => sum + list.items.filter((i) => !i.checked).length, 0),
+    [lists],
+  );
 
-    const newItems: ShoppingListItem[] = toAdd.map((item, i) => ({
-      id: `${Date.now()}-${i}-${Math.random()}`,
-      // Strip "400g", "2 tbsp" etc. and depluralize for a clean display name
-      name: extractIngredientName(item.name),
-      checked: false,
-      category: detectCategory(item.name),
-      recipeId: item.recipeId,
-      recipeName: item.recipeName,
-    }));
-
-    setShoppingList((prev) => [...prev, ...newItems]);
-    return toAdd.length;
+  const createList = (name: string): string => {
+    const id = `list-${Date.now()}-${Math.random()}`;
+    setLists((prev) => [
+      ...prev,
+      { id, name: name.trim() || 'New list', createdAt: Date.now(), items: [] },
+    ]);
+    return id;
   };
 
-  const addManualItem = (name: string) => {
+  const deleteList = (listId: string) => {
+    setLists((prev) => prev.filter((l) => l.id !== listId));
+  };
+
+  const addItemsToList = (
+    items: Array<{ name: string; recipeId?: string; recipeName?: string }>,
+    listId: string,
+  ): number => {
+    let added = 0;
+    setLists((prev) =>
+      prev.map((list) => {
+        if (list.id !== listId) return list;
+        const toAdd = items.filter(
+          (item) => !list.items.some((s) => ingredientMatches(item.name, s.name)),
+        );
+        added = toAdd.length;
+        if (toAdd.length === 0) return list;
+        const newItems: ShoppingListItem[] = toAdd.map((item, i) => ({
+          id: `${Date.now()}-${i}-${Math.random()}`,
+          name: extractIngredientName(item.name),
+          checked: false,
+          category: detectCategory(item.name),
+          recipeId: item.recipeId,
+          recipeName: item.recipeName,
+        }));
+        return { ...list, items: [...list.items, ...newItems] };
+      }),
+    );
+    return added;
+  };
+
+  const addManualItemToList = (name: string, listId: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    // Ignore duplicates using the same normalised match used for recipe items
-    if (shoppingList.some((s) => ingredientMatches(trimmed, s.name))) return;
-    setShoppingList((prev) => [
-      ...prev,
-      {
-        id: `${Date.now()}-${Math.random()}`,
-        // Sentence-case the manually typed name
-        name: trimmed.charAt(0).toUpperCase() + trimmed.slice(1),
-        checked: false,
-        category: detectCategory(trimmed),
-      },
-    ]);
+    setLists((prev) =>
+      prev.map((list) => {
+        if (list.id !== listId) return list;
+        if (list.items.some((s) => ingredientMatches(trimmed, s.name))) return list;
+        const newItem: ShoppingListItem = {
+          id: `${Date.now()}-${Math.random()}`,
+          name: trimmed.charAt(0).toUpperCase() + trimmed.slice(1),
+          checked: false,
+          category: detectCategory(trimmed),
+        };
+        return { ...list, items: [...list.items, newItem] };
+      }),
+    );
   };
 
-  const toggleItem = (id: string) => {
-    setShoppingList((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, checked: !item.checked } : item,
+  const toggleItem = (listId: string, itemId: string) => {
+    setLists((prev) =>
+      prev.map((list) =>
+        list.id !== listId
+          ? list
+          : {
+              ...list,
+              items: list.items.map((item) =>
+                item.id === itemId ? { ...item, checked: !item.checked } : item,
+              ),
+            },
       ),
     );
   };
 
-  const removeItem = (id: string) => {
-    setShoppingList((prev) => prev.filter((item) => item.id !== id));
+  const removeItem = (listId: string, itemId: string) => {
+    setLists((prev) =>
+      prev.map((list) =>
+        list.id !== listId
+          ? list
+          : { ...list, items: list.items.filter((item) => item.id !== itemId) },
+      ),
+    );
   };
 
-  const clearChecked = () => {
-    setShoppingList((prev) => prev.filter((item) => !item.checked));
+  const clearChecked = (listId: string) => {
+    setLists((prev) =>
+      prev.map((list) =>
+        list.id !== listId
+          ? list
+          : { ...list, items: list.items.filter((item) => !item.checked) },
+      ),
+    );
   };
 
   return (
     <ShoppingListContext.Provider
-      value={{ shoppingList, addItems, addManualItem, toggleItem, removeItem, clearChecked }}
+      value={{
+        lists,
+        totalUncheckedCount,
+        createList,
+        deleteList,
+        addItemsToList,
+        addManualItemToList,
+        toggleItem,
+        removeItem,
+        clearChecked,
+      }}
     >
       {children}
     </ShoppingListContext.Provider>
