@@ -45,7 +45,10 @@ export default function RootLayout() {
         <SavedRecipesProvider>
           <PantryProvider>
             <ShoppingListProvider>
-              <Stack screenOptions={{ headerShown: false }} />
+              <Stack screenOptions={{ headerShown: false }}>
+                {/* No navigator transition on splash — it manages its own fade-out */}
+                <Stack.Screen name="splash" options={{ animation: 'none' }} />
+              </Stack>
               <StatusBar style="light" />
             </ShoppingListProvider>
           </PantryProvider>
