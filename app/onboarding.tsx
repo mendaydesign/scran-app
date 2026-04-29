@@ -67,127 +67,12 @@ const SLIDES: SlideData[] = [
   },
 ];
 
-// ─── Phone frame ──────────────────────────────────────────────────────────────
-
-const PHONE_W = 148;
-const PHONE_H = 288;
-
-function PhoneFrame({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: object;
-}) {
-  return (
-    <View style={[phoneStyles.outer, style]}>
-      <View style={phoneStyles.islandRow}>
-        <View style={phoneStyles.island} />
-      </View>
-      <View style={phoneStyles.screen}>{children}</View>
-      <View style={phoneStyles.homeRow}>
-        <View style={phoneStyles.homeBar} />
-      </View>
-    </View>
-  );
-}
-
-const phoneStyles = StyleSheet.create({
-  outer: {
-    width: PHONE_W,
-    height: PHONE_H,
-    borderRadius: 26,
-    backgroundColor: '#111',
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.40,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  islandRow: {
-    height: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  island: {
-    width: 36,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#111',
-  },
-  screen: {
-    flex: 1,
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: Colors.background,
-  },
-  homeRow: {
-    height: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  homeBar: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-});
-
-// ─── Shared: recipe card wireframe ────────────────────────────────────────────
-
-function RecipeCardMockup({ title, color }: { title: string; color: string }) {
-  return (
-    <View style={{ flex: 1, backgroundColor: color }}>
-      <View style={cardMock.overlay}>
-        <View style={cardMock.timeBadge}>
-          <Text style={cardMock.badgeText}>20 MIN</Text>
-        </View>
-        <Text style={cardMock.title} numberOfLines={2}>
-          {title.toUpperCase()}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-const cardMock = StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 10,
-    paddingTop: 20,
-    backgroundColor: 'rgba(0,40,20,0.80)',
-    gap: 4,
-  },
-  timeBadge: {
-    backgroundColor: '#B8F9D7',
-    borderRadius: 99,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
-  },
-  badgeText: {
-    fontFamily: FontFamily.heading,
-    fontSize: 7,
-    color: '#226248',
-    lineHeight: 9,
-  },
-  title: {
-    fontFamily: FontFamily.heading,
-    fontSize: 11,
-    color: '#ffffff',
-    lineHeight: 13,
-  },
-});
 
 // ─── Illustration: Slide 1 — Swipe ───────────────────────────────────────────
 
 const SLIDE1_IMAGE    = require('../assets/onboarding assets/screen 1 image.png'); // Metro auto-selects @2x/@3x variants
 const SLIDE2_IMAGE    = require('../assets/onboarding assets/screen 2 image.png');
+const SLIDE3_IMAGE    = require('../assets/onboarding assets/Screen 3.png');
 import OnboardingLogo from '../assets/onboarding assets/Onboarding Logo.svg';
 
 function SwipeIllustration() {
@@ -226,95 +111,14 @@ function PantryIllustration() {
 
 // ─── Illustration: Slide 3 — You're All Set ───────────────────────────────────
 
-function DiscoverScreenContent() {
-  return (
-    <View style={{ flex: 1, backgroundColor: Colors.background }}>
-      <View style={discoverMock.header}>
-        <Text style={discoverMock.logo}>SCRAN</Text>
-      </View>
-      <View style={discoverMock.chipsRow}>
-        {['Burgers', 'Mexican'].map((chip) => (
-          <View key={chip} style={discoverMock.chip}>
-            <Text style={discoverMock.chipText}>{chip}</Text>
-          </View>
-        ))}
-      </View>
-      <View style={discoverMock.cardStack}>
-        <View style={[discoverMock.card, discoverMock.cardBack]}>
-          <RecipeCardMockup title="Prawn Pad Thai" color="#1a3d2e" />
-        </View>
-        <View style={[discoverMock.card, discoverMock.cardFront]}>
-          <RecipeCardMockup title="Chicken Tikka" color="#2d5a3d" />
-        </View>
-      </View>
-    </View>
-  );
-}
-
-const discoverMock = StyleSheet.create({
-  header: {
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 4,
-  },
-  logo: {
-    fontFamily: FontFamily.heading,
-    fontSize: 12,
-    color: Colors.textPrimary,
-    lineHeight: 14,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 10,
-    marginBottom: 8,
-  },
-  chip: {
-    backgroundColor: Colors.primary,
-    borderRadius: 99,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  chipText: {
-    fontFamily: FontFamily.heading,
-    fontSize: 7,
-    color: '#ffffff',
-    lineHeight: 9,
-  },
-  cardStack: {
-    flex: 1,
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-  },
-  card: {
-    position: 'absolute',
-    left: 8,
-    right: 8,
-    bottom: 8,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  cardBack: {
-    top: 12,
-    transform: [{ rotate: '2deg' }],
-    opacity: 0.7,
-  },
-  cardFront: {
-    top: 4,
-  },
-});
-
 function GetStartedIllustration() {
   return (
     <View style={illustrationStyles.root}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        <PhoneFrame style={{ transform: [{ rotate: '-7deg' }], zIndex: 2, marginRight: -16 }}>
-          <DiscoverScreenContent />
-        </PhoneFrame>
-        <PhoneFrame style={{ transform: [{ rotate: '7deg' }], zIndex: 1, marginTop: 24 }}>
-          <RecipeCardMockup title="Prawn Pad Thai" color="#1a3d2e" />
-        </PhoneFrame>
-      </View>
+      <Image
+        source={SLIDE3_IMAGE}
+        style={swipeStyles.image}
+        contentFit="contain"
+      />
     </View>
   );
 }
