@@ -9,6 +9,7 @@ import {
   FontSize,
   FontWeight,
   Radius,
+  Stroke,
 } from '@/constants/tokens';
 
 interface CategoryFilterProps {

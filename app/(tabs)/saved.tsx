@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   cardShadow: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: Radius.r400,
+    borderRadius: Radius.r200,
     shadowColor: '#383834',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.06,
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
 
   card: {
     flex: 1,
-    borderRadius: Radius.r400,
+    borderRadius: Radius.r200,
     overflow: 'hidden',
     backgroundColor: Colors.surface,
   },

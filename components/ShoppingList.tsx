@@ -8,7 +8,7 @@
 //       expanded  → manual-add input, items grouped by category, clear-checked button
 //   • Empty state when no lists exist
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,17 +16,20 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
+  Keyboard,
+  Animated,
   LayoutAnimation,
   Platform,
   UIManager,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { useShoppingList } from '@/context/ShoppingListContext';
 import type { ShoppingListItem, ShoppingListGroup } from '@/context/ShoppingListContext';
 import { SHOPPING_CATEGORY_ORDER } from '@/utils/ingredientUtils';
-import { Colors, FontFamily, FontSize, Radius } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, Radius, Stroke } from '@/constants/tokens';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -36,12 +39,48 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 // ─── Accordion list card ──────────────────────────────────────────────────────
 
 function ListAccordion({ list }: { list: ShoppingListGroup }) {
-  const { addManualItemToList, toggleItem, removeItem, clearChecked, deleteList } =
+  const { addManualItemToList, toggleItem, removeItem, clearChecked, deleteList, renameList } =
     useShoppingList();
 
   const [expanded, setExpanded] = useState(true);
   const [inputText, setInputText] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+
+  // Rename modal state — same keyboard/opacity pattern as the create modal
+  const [renameVisible, setRenameVisible] = useState(false);
+  const [renameText, setRenameText]       = useState('');
+  const [renameKbHeight, setRenameKbHeight] = useState(0);
+  const renameOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!renameVisible) renameOpacity.setValue(0);
+  }, [renameVisible]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = Keyboard.addListener(showEvent, (e) => {
+      setRenameKbHeight(e.endCoordinates.height);
+      Animated.timing(renameOpacity, {
+        toValue: 1, duration: 180, useNativeDriver: true,
+      }).start();
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setRenameKbHeight(0);
+      renameOpacity.setValue(0);
+    });
+    return () => { onShow.remove(); onHide.remove(); };
+  }, []);
+
+  const openRename = () => {
+    setRenameText(list.name);
+    setRenameVisible(true);
+  };
+
+  const handleRename = () => {
+    renameList(list.id, renameText);
+    setRenameVisible(false);
+  };
 
   const uncheckedCount = list.items.filter((i) => !i.checked).length;
   const checkedCount   = list.items.length - uncheckedCount;
@@ -91,6 +130,14 @@ function ListAccordion({ list }: { list: ShoppingListGroup }) {
       >
         <View style={styles.accordionHeaderLeft}>
           <Text style={styles.accordionTitle} numberOfLines={1}>{list.name}</Text>
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation(); openRename(); }}
+            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+            accessibilityLabel={`Rename ${list.name}`}
+            accessibilityRole="button"
+          >
+            <MaterialIcons name="edit" size={16} color={Colors.textSecondary} />
+          </TouchableOpacity>
           {list.items.length > 0 && (
             <View style={styles.countBadge}>
               <Text style={styles.countBadgeText}>
@@ -216,6 +263,53 @@ function ListAccordion({ list }: { list: ShoppingListGroup }) {
           )}
         </View>
       )}
+
+      {/* ── Rename modal ────────────────────────────────────────────────────── */}
+      <Modal
+        visible={renameVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRenameVisible(false)}
+      >
+        <TouchableOpacity
+          style={[StyleSheet.absoluteFill, styles.modalOverlay]}
+          activeOpacity={1}
+          onPress={() => setRenameVisible(false)}
+        />
+        <Animated.View
+          style={[styles.modalKav, { bottom: renameKbHeight + 20, opacity: renameOpacity }]}
+          pointerEvents="box-none"
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Rename list</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={renameText}
+              onChangeText={setRenameText}
+              placeholder="List name…"
+              placeholderTextColor={Colors.textSecondary}
+              autoFocus
+              autoCapitalize="words"
+              returnKeyType="done"
+              onSubmitEditing={handleRename}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setRenameVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirm}
+                onPress={handleRename}
+              >
+                <Text style={styles.modalConfirmText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </Modal>
     </View>
   );
 }
@@ -227,6 +321,37 @@ export default function ShoppingList() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [newListName, setNewListName]   = useState('');
+
+  // Card is invisible until the keyboard height is known — then it snaps
+  // to the correct position and fades in. No Y-axis movement ever.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+
+  // Reset opacity whenever the modal closes so it's hidden on next open
+  useEffect(() => {
+    if (!modalVisible) cardOpacity.setValue(0);
+  }, [modalVisible]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      Animated.timing(cardOpacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+      cardOpacity.setValue(0);
+    });
+
+    return () => { onShow.remove(); onHide.remove(); };
+  }, []);
 
   const handleCreateList = () => {
     const name = newListName.trim();
@@ -275,10 +400,16 @@ export default function ShoppingList() {
         animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
+        {/* Dimming overlay — always covers full screen, never shrinks */}
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[StyleSheet.absoluteFill, styles.modalOverlay]}
           activeOpacity={1}
           onPress={() => setModalVisible(false)}
+        />
+        {/* Card — fixed position above keyboard, fades in only, no Y movement */}
+        <Animated.View
+          style={[styles.modalKav, { bottom: keyboardHeight + 20, opacity: cardOpacity }]}
+          pointerEvents="box-none"
         >
           <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
             <Text style={styles.modalTitle}>New shopping list</Text>
@@ -308,7 +439,7 @@ export default function ShoppingList() {
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
-        </TouchableOpacity>
+        </Animated.View>
       </Modal>
     </View>
   );
@@ -424,7 +555,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.bodyBase,
     fontFamily: FontFamily.body,
     color: Colors.textPrimary,
-    borderBottomWidth: 2,
+    borderBottomWidth: Stroke.focusRing,
     borderBottomColor: 'transparent',
   },
 
@@ -564,12 +695,16 @@ const styles = StyleSheet.create({
   },
 
   // ── New list modal ───────────────────────────────────────────────────────────
+  // Full-screen dim — absoluteFill, never affected by keyboard
   modalOverlay: {
-    flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 28,
+  },
+
+  // Card positioner — absolutely positioned so `bottom` drives it above the keyboard
+  modalKav: {
+    position: 'absolute',
+    left: 28,
+    right: 28,
   },
 
   modalCard: {
@@ -594,7 +729,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.bodyBase,
     fontFamily: FontFamily.body,
     color: Colors.textPrimary,
-    borderBottomWidth: 2,
+    borderBottomWidth: Stroke.focusRing,
     borderBottomColor: Colors.primary,
   },
 

@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { usePantry } from '@/context/PantryContext';
 import { useShoppingList } from '@/context/ShoppingListContext';
-import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius, Stroke } from '@/constants/tokens';
 import { INGREDIENT_CATEGORIES } from '@/constants/ingredients';
 import ToggleSwitch from '@/components/ToggleSwitch';
 import ShoppingList from '@/components/ShoppingList';
@@ -395,12 +395,12 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     backgroundColor: Colors.surface,
-    borderRadius: Radius.r200,
+    borderRadius: Radius.r400,
     paddingHorizontal: 16,
     fontSize: FontSize.bodyBase,
     fontFamily: FontFamily.body,
     color: Colors.textPrimary,
-    borderBottomWidth: 2,
+    borderBottomWidth: Stroke.focusRing,
     borderBottomColor: 'transparent',
   },
 

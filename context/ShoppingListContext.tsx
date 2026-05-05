@@ -46,6 +46,7 @@ interface ShoppingListContextValue {
   ) => number;
   // Add a single manually typed item to a specific list.
   addManualItemToList: (name: string, listId: string) => void;
+  renameList: (listId: string, name: string) => void;
   toggleItem: (listId: string, itemId: string) => void;
   removeItem: (listId: string, itemId: string) => void;
   clearChecked: (listId: string) => void;
@@ -159,6 +160,16 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const renameList = (listId: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setLists((prev) =>
+      prev.map((list) =>
+        list.id !== listId ? list : { ...list, name: trimmed },
+      ),
+    );
+  };
+
   return (
     <ShoppingListContext.Provider
       value={{
@@ -168,6 +179,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
         deleteList,
         addItemsToList,
         addManualItemToList,
+        renameList,
         toggleItem,
         removeItem,
         clearChecked,

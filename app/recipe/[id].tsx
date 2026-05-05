@@ -23,7 +23,7 @@ import { MOCK_RECIPES } from '@/constants/mockRecipes';
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
 import { usePantry } from '@/context/PantryContext';
 import { useShoppingList } from '@/context/ShoppingListContext';
-import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius, Stroke } from '@/constants/tokens';
 import { ingredientMatches } from '@/utils/ingredientUtils';
 import type { Difficulty } from '@/types/recipe';
 
@@ -500,7 +500,7 @@ export default function RecipeDetail() {
         accessibilityLabel="Go back"
         accessibilityRole="button"
       >
-        <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+        <Ionicons name="chevron-back" size={22} color={Colors.onPrimary} />
       </TouchableOpacity>
 
       {/* Floating save button */}
@@ -541,12 +541,7 @@ const styles = StyleSheet.create({
   },
 
   heroScrim: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    display: 'none',
   },
 
   // ── Content ───────────────────────────────────────────────────────────────
@@ -813,7 +808,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -922,7 +917,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.bodyBase,
     fontFamily: FontFamily.body,
     color: Colors.textPrimary,
-    borderBottomWidth: 2,
+    borderBottomWidth: Stroke.focusRing,
     borderBottomColor: Colors.primary,
     marginBottom: 16,
   },

@@ -31,10 +31,19 @@
 - Recipes are filtered to show meals that can be made with those ingredients
 - Show a match percentage (e.g., "You have 8/10 ingredients")
 - Allow filtering by "exact match only" or "close match"
+- Ingredient text input uses `Radius.r400` (32px)
+
+### 3b. Shopping List
+- Lives on the Pantry tab (Shopping List sub-tab)
+- Multiple named lists; each renders as an accordion card
+- Lists can be renamed: `MaterialIcons edit` icon (16px, `Colors.textSecondary`) sits next to the list title and opens a rename modal
+- **"New list" and "Rename" modals — keyboard pattern:** use `Keyboard.addListener('keyboardWillShow')` to get keyboard height, then snap the card to `bottom: keyboardHeight + 20` (no Y animation) and fade opacity `0 → 1` over 180ms. The full-screen dim overlay uses `StyleSheet.absoluteFill` so it is never affected by the keyboard. `KeyboardAvoidingView` is intentionally not used inside transparent modals on iOS as it causes glitches.
+- `renameList(listId, name)` is exposed on `ShoppingListContext`
 
 ### 4. Saved Recipes
 - A collection of all right-swiped recipes
 - Users can view full recipe details from here
+- Grid cards use `Radius.r200` (8px) — tighter rounding than the default card shape
 
 ### 5. Onboarding
 - 3-slide first-launch flow shown only once (persisted via `AsyncStorage` key `'onboarding_complete'`)
@@ -119,13 +128,13 @@ The palette is a curated combination of deep forest green, warm off-white surfac
 
 ### Border Radius
 
-The signature shape language uses oversized rounding. Avoid `r100` and `r200` in main UI — stay within `r400` to `full`.
+The signature shape language uses oversized rounding. Avoid `r100` in main UI. `r200` is used sparingly for tighter card shapes.
 
 | Token | Value | Usage |
 |-------|-------|-------|
 | `r100` | 4px | Micro elements only — avoid in main UI |
-| `r200` | 8px | Small rounding — inputs |
-| `r400` | 32px | lg (2rem) — cards, containers, section blocks |
+| `r200` | 8px | Tight card shapes (e.g. saved recipe grid cards), inputs |
+| `r400` | 32px | lg (2rem) — cards, containers, section blocks, pantry input |
 | `full` | 9999px | xl pills — chips, pill buttons, tags |
 
 ### Stroke
@@ -197,6 +206,11 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
 - No border by default
 - On focus: 2px bottom-weighted line in `primary` colour (`borderBottomWidth: 2, borderBottomColor: Colors.primary`)
 - Use `onFocus`/`onBlur` state to toggle the active bottom line
+
+### Recipe Detail Screen
+- **Hero image:** no scrim/overlay — the photo is shown clean with no darkening layer at the bottom
+- **Back button (top-left):** 40×40px circle, `Colors.primary` (`#04492B`) background, `Colors.onPrimary` (white) chevron icon — same pill style as primary buttons
+- **Save button (top-right):** same 40×40px circle with `Colors.primary` background
 
 ### Recipe Cards (swipe + grid)
 - Shape: `Radius.r400` (32px), `overflow: 'hidden'` on inner card, shadow on outer wrapper (see Elevation rules)

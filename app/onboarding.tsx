@@ -29,7 +29,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors, FontFamily, FontSize, Radius } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, Radius, Stroke } from '@/constants/tokens';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const ONBOARDING_KEY = 'onboarding_complete';
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: Radius.full,
-    borderWidth: 2,
+    borderWidth: Stroke.focusRing,
     borderColor: '#D5FB2A',
     backgroundColor: Colors.primary,
     alignItems: 'center',

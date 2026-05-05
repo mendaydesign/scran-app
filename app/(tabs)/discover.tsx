@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { MOCK_RECIPES, CATEGORIES } from '@/constants/mockRecipes';
-import { Colors, FontFamily, FontSize, FontWeight, Radius, IconSize } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, Radius, IconSize, Stroke } from '@/constants/tokens';
 import SwipeStack from '@/components/SwipeStack';
 import CategoryFilter from '@/components/CategoryFilter';
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   // Nope: white fill with pink ring + pink X icon
   nopeButton: {
     backgroundColor: Colors.background,
-    borderWidth: 2,
+    borderWidth: Stroke.focusRing,
     borderColor: Colors.secondary,
   },
 

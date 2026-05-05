@@ -86,6 +86,11 @@ Inspired by the reference image's "Sophisticated" and "Ethical" tags:
 - **Rule:** Absolute prohibition of divider lines. 
 - **Separation:** Use vertical white space (32px or 48px) or alternating background colors (`surface-container-low` vs `surface-container-high`).
 - **Layout:** Use "Graphic Shapes" – experiment with placing images inside `lg` (2rem) rounded containers that clip the content, creating an editorial mask effect.
+- **Saved recipe grid cards** use `Radius.r200` (8px) — a deliberately tighter corner to distinguish the grid context from the full swipe card shape.
+
+### Modal / Sheet Keyboard Handling
+- Never use `KeyboardAvoidingView` inside a `transparent` Modal on iOS — it causes glitches where the overlay shrinks with the keyboard.
+- **Correct pattern:** keep the dim overlay as `StyleSheet.absoluteFill` (unaffected by keyboard). Listen to `keyboardWillShow` to get keyboard height, snap the card to `bottom: keyboardHeight + gap` immediately (no position animation), and animate only `opacity` 0 → 1 over ~180ms. This produces a clean fade-in with the card already in its final position above the keyboard.
 
 ---
 
