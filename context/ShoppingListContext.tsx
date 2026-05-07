@@ -50,6 +50,8 @@ interface ShoppingListContextValue {
   toggleItem: (listId: string, itemId: string) => void;
   removeItem: (listId: string, itemId: string) => void;
   clearChecked: (listId: string) => void;
+  // Uncheck all items in a list — resets it for reuse without deleting anything.
+  uncheckAll: (listId: string) => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -160,6 +162,16 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const uncheckAll = (listId: string) => {
+    setLists((prev) =>
+      prev.map((list) =>
+        list.id !== listId
+          ? list
+          : { ...list, items: list.items.map((item) => ({ ...item, checked: false })) },
+      ),
+    );
+  };
+
   const renameList = (listId: string, name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -183,6 +195,7 @@ export function ShoppingListProvider({ children }: { children: ReactNode }) {
         toggleItem,
         removeItem,
         clearChecked,
+        uncheckAll,
       }}
     >
       {children}

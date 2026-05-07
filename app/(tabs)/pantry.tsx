@@ -19,14 +19,12 @@ import { usePantry } from '@/context/PantryContext';
 import { useShoppingList } from '@/context/ShoppingListContext';
 import { Colors, FontFamily, FontSize, FontWeight, Radius, Stroke } from '@/constants/tokens';
 import { INGREDIENT_CATEGORIES } from '@/constants/ingredients';
-import ToggleSwitch from '@/components/ToggleSwitch';
 import ShoppingList from '@/components/ShoppingList';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function PantryScreen() {
-  const { pantryItems, addItem, removeItem, clearPantry, matchBadgeEnabled, toggleMatchBadge } =
-    usePantry();
+  const { pantryItems, addItem, removeItem, clearPantry } = usePantry();
   const { totalUncheckedCount } = useShoppingList();
 
   // Which sub-section is active
@@ -220,31 +218,6 @@ export default function PantryScreen() {
 
             </View>
 
-            {/* Match badge toggle */}
-            <TouchableOpacity
-              style={styles.toggleRow}
-              onPress={toggleMatchBadge}
-              accessibilityLabel={
-                matchBadgeEnabled
-                  ? 'Disable ingredient match badges on recipe cards'
-                  : 'Enable ingredient match badges on recipe cards'
-              }
-              accessibilityRole="switch"
-              activeOpacity={0.7}
-            >
-              <View style={styles.toggleLabel}>
-                <Text style={styles.toggleTitle}>Show match badges</Text>
-                <Text style={styles.toggleSubtitle}>
-                  Displays how many ingredients you have on each recipe card
-                </Text>
-              </View>
-              <ToggleSwitch
-                value={matchBadgeEnabled}
-                onValueChange={toggleMatchBadge}
-                accessibilityLabel="Toggle ingredient match badges"
-              />
-            </TouchableOpacity>
-
             {/* Ingredient list or empty state — overflow:hidden prevents the
                 content from bleeding into the sections above if space is tight */}
             <View style={styles.contentArea}>
@@ -254,14 +227,12 @@ export default function PantryScreen() {
                 <Ionicons name="basket-outline" size={64} color={Colors.textSecondary} />
                 <Text style={styles.emptyTitle}>Your pantry is empty</Text>
                 <Text style={styles.emptySubtitle}>
-                  Add ingredients above and then use the Pantry Match toggle on the
-                  Discover tab to see how well each recipe fits what you have.
+                  Add ingredients above and recipe cards will show how many you already have.
                 </Text>
               </View>
 
             ) : (
 
-              <>
                 <FlatList
                   data={pantryItems}
                   keyExtractor={(item) => item}
@@ -281,17 +252,18 @@ export default function PantryScreen() {
                       </TouchableOpacity>
                     </View>
                   )}
+                  ListFooterComponent={
+                    <TouchableOpacity
+                      style={styles.clearButton}
+                      onPress={clearPantry}
+                      accessibilityLabel="Clear all pantry ingredients"
+                      accessibilityRole="button"
+                    >
+                      <Ionicons name="trash-outline" size={16} color='#D00F0F' />
+                      <Text style={styles.clearButtonText}>Clear All</Text>
+                    </TouchableOpacity>
+                  }
                 />
-
-                <TouchableOpacity
-                  style={styles.clearButton}
-                  onPress={clearPantry}
-                  accessibilityLabel="Clear all pantry ingredients"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.clearButtonText}>Clear All</Text>
-                </TouchableOpacity>
-              </>
 
             )}
             </View>
@@ -489,39 +461,6 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
 
-  // ── Match badge toggle ────────────────────────────────────────────────────
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    marginHorizontal: 20,
-    marginBottom: 8,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.r400,
-    gap: 12,
-  },
-
-  toggleLabel: {
-    flex: 1,
-    gap: 3,
-  },
-
-  toggleTitle: {
-    fontFamily: FontFamily.heading,
-    fontSize: FontSize.bodyBase,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-  },
-
-  toggleSubtitle: {
-    fontFamily: FontFamily.body,
-    fontSize: FontSize.bodySmall,
-    color: Colors.textSecondary,
-    lineHeight: FontSize.bodySmall * 1.4,
-  },
-
   // ── Content area — clips children so they never overflow into sections above
   contentArea: {
     flex: 1,
@@ -587,21 +526,20 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
 
-  // ── Clear all button ──────────────────────────────────────────────────────
+  // ── Clear all button — rendered as FlatList footer, scrolls with the list ──
   clearButton: {
-    alignSelf: 'center',
-    marginVertical: 20,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.surfaceHigh,
-    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 12,
+    minHeight: 44,
   },
 
   clearButtonText: {
-    fontFamily: FontFamily.body,
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.bodyBase,
-    color: Colors.textSecondary,
+    color: '#D00F0F',
   },
 });

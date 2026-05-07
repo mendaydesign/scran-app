@@ -126,6 +126,19 @@ export default function RecipeCard({
             transition={0}
           />
 
+          {/* Matched Ingredients — top-left, pantry mode only */}
+          {matchBadge && (
+            <View style={styles.matchRow}>
+              <BlurView intensity={60} tint="light" style={[styles.badge, styles.matchBadge]}>
+                <Ionicons name="basket-outline" size={14} color="#ffffff" />
+                <Text style={[styles.badgeText, { color: '#ffffff' }]}>
+                  {matchBadge.matched}/{matchBadge.total}
+                </Text>
+              </BlurView>
+              <Text style={styles.matchLabel}>Matched Ingredients</Text>
+            </View>
+          )}
+
           {/* Bottom-up gradient overlay */}
           <LinearGradient
             colors={['rgba(0,75,51,0)', 'rgba(0,75,51,0.40)', 'rgba(0,75,51,0.95)']}
@@ -138,6 +151,7 @@ export default function RecipeCard({
               {recipe.title.toUpperCase()}
             </Text>
 
+            {/* Cook time · difficulty · serves */}
             <View style={styles.badgeRow}>
               {/* Cook time */}
               <View style={[styles.badge, { backgroundColor: TIME_BADGE.bg }]}>
@@ -176,16 +190,6 @@ export default function RecipeCard({
                   SERVES {recipe.servings}
                 </Text>
               </View>
-
-              {/* Pantry match badge (shown in pantry mode only) */}
-              {matchBadge && (
-                <BlurView intensity={60} tint="light" style={[styles.badge, styles.matchBadge]}>
-                  <Ionicons name="basket-outline" size={14} color="#ffffff" />
-                  <Text style={[styles.badgeText, { color: '#ffffff' }]}>
-                    {matchBadge.matched}/{matchBadge.total}
-                  </Text>
-                </BlurView>
-              )}
             </View>
           </LinearGradient>
 
@@ -344,20 +348,39 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
+  // "Matched Ingredients" — absolutely pinned to top-left of card
+  matchRow: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    zIndex: 10,
+  },
+
+  matchLabel: {
+    fontFamily: FontFamily.headingSemibold,
+    fontSize: FontSize.bodySmall,
+    color: 'rgba(255,255,255,0.85)',
+  },
+
   badgeRow: {
     flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
+    gap: 6,
+    flexWrap: 'nowrap',
+    alignItems: 'center',
   },
 
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
     borderRadius: Radius.full,
     overflow: 'hidden',
+    flexShrink: 1,
   },
 
   // Applied in addition to badge for the pantry match pill only

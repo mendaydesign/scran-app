@@ -52,6 +52,7 @@ export const FontWeight = {
 export const Radius = {
   r100: 4,    // Micro elements only — avoid in main UI
   r200: 8,    // Small rounding (inputs, small UI elements)
+  r300: 20,   // Medium rounding — saved recipe grid cards
   r400: 32,   // lg (2rem) — cards, containers
   full: 9999, // xl pills — chips, pill buttons, tags
 } as const;

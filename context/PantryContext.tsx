@@ -12,9 +12,6 @@ interface PantryContextValue {
   addItem: (name: string) => void;
   removeItem: (name: string) => void;
   clearPantry: () => void;
-  // Whether the match badge is shown on recipe cards in the Discover tab
-  matchBadgeEnabled: boolean;
-  toggleMatchBadge: () => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -25,7 +22,6 @@ const PantryContext = createContext<PantryContextValue | null>(null);
 
 export function PantryProvider({ children }: { children: ReactNode }) {
   const [pantryItems, setPantryItems] = useState<string[]>([]);
-  const [matchBadgeEnabled, setMatchBadgeEnabled] = useState(false);
 
   const addItem = (name: string) => {
     const trimmed = name.trim();
@@ -43,11 +39,9 @@ export function PantryProvider({ children }: { children: ReactNode }) {
 
   const clearPantry = () => setPantryItems([]);
 
-  const toggleMatchBadge = () => setMatchBadgeEnabled((v) => !v);
-
   return (
     <PantryContext.Provider
-      value={{ pantryItems, addItem, removeItem, clearPantry, matchBadgeEnabled, toggleMatchBadge }}
+      value={{ pantryItems, addItem, removeItem, clearPantry }}
     >
       {children}
     </PantryContext.Provider>

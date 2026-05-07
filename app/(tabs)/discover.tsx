@@ -22,7 +22,7 @@ export default function DiscoverScreen() {
   const { savedRecipes, saveRecipe } = useSavedRecipes();
 
   // Pantry state — shared with the Pantry tab
-  const { pantryItems, matchBadgeEnabled } = usePantry();
+  const { pantryItems } = usePantry();
 
   // Active category filter — 'All' shows every recipe
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -70,7 +70,7 @@ export default function DiscoverScreen() {
           recipes={displayedRecipes}
           onSwipeRight={handleSwipeRight}
           triggerSwipeRef={triggerSwipeRef}
-          pantryItems={matchBadgeEnabled ? pantryItems : undefined}
+          pantryItems={pantryItems.length > 0 ? pantryItems : undefined}
         />
       </View>
 

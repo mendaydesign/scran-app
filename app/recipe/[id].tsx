@@ -83,6 +83,12 @@ export default function RecipeDetail() {
     transform: [{ translateY: sheetTranslateY.value }],
   }));
 
+  // Toast slide-in/out — starts far enough below the screen to be fully hidden
+  const toastTranslateY = useSharedValue(200);
+  const toastAnimStyle  = useAnimatedStyle(() => ({
+    transform: [{ translateY: toastTranslateY.value }],
+  }));
+
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -158,7 +164,15 @@ export default function RecipeDetail() {
   const showToast = (message: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(message);
-    toastTimerRef.current = setTimeout(() => setToast(null), 2500);
+    // Snap off-screen then slide up into view
+    toastTranslateY.value = 200;
+    toastTranslateY.value = withTiming(0, { duration: 380, easing: Easing.out(Easing.cubic) });
+    // After display time, slide back down then clear the message
+    toastTimerRef.current = setTimeout(() => {
+      toastTranslateY.value = withTiming(200, { duration: 300, easing: Easing.in(Easing.cubic) }, () => {
+        runOnJS(setToast)(null);
+      });
+    }, 2500);
   };
 
   const addToList = (listId: string) => {
@@ -382,18 +396,16 @@ export default function RecipeDetail() {
         </View>
       </ScrollView>
 
-      {/* Toast confirmation */}
-      {toast && (
-        <View
-          style={[styles.toast, { bottom: insets.bottom + 24 }]}
-          pointerEvents="none"
-        >
-          <Text style={styles.toastText}>{toast}</Text>
-          <View style={styles.toastIcon}>
-            <Ionicons name="checkmark" size={18} color={Colors.primary} />
-          </View>
+      {/* Toast confirmation — always mounted; translateY drives slide-in/out */}
+      <Animated.View
+        style={[styles.toast, { bottom: insets.bottom + 24 }, toastAnimStyle]}
+        pointerEvents="none"
+      >
+        <Text style={styles.toastText}>{toast ?? ''}</Text>
+        <View style={styles.toastIcon}>
+          <Ionicons name="checkmark-sharp" size={22} color='#D5FB2A' />
         </View>
-      )}
+      </Animated.View>
 
       {/* List picker modal — custom animation so the overlay fades independently
           of the sheet slide-up, and the sheet can be dragged to dismiss */}
@@ -772,7 +784,7 @@ const styles = StyleSheet.create({
     right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: '#D5FB2A',
     borderRadius: Radius.full,
     paddingVertical: 16,
     paddingLeft: 24,
@@ -787,16 +799,16 @@ const styles = StyleSheet.create({
   toastText: {
     fontFamily: FontFamily.heading,
     fontSize: FontSize.bodyBase,
-    color: Colors.onPrimary,
+    color: Colors.primary,
     flex: 1,
   },
 
-  // Lime circle with forest-green tick — sits at the right of the toast bar
+  // Forest-green circle with lime tick — sits at the right of the toast bar
   toastIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#D5FB2A',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,

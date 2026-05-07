@@ -39,11 +39,19 @@
 - Lists can be renamed: `MaterialIcons edit` icon (16px, `Colors.textSecondary`) sits next to the list title and opens a rename modal
 - **"New list" and "Rename" modals — keyboard pattern:** use `Keyboard.addListener('keyboardWillShow')` to get keyboard height, then snap the card to `bottom: keyboardHeight + 20` (no Y animation) and fade opacity `0 → 1` over 180ms. The full-screen dim overlay uses `StyleSheet.absoluteFill` so it is never affected by the keyboard. `KeyboardAvoidingView` is intentionally not used inside transparent modals on iOS as it causes glitches.
 - `renameList(listId, name)` is exposed on `ShoppingListContext`
+- `uncheckAll(listId)` resets all items to unchecked — used by the "Reuse List" CTA
+- **Basket action buttons** (shown when ≥1 item is checked) — stacked vertically in this order:
+  1. **"Add ingredients to pantry"** — lime (`#D5FB2A`) background, `Colors.primary` text/icon, full-width pill
+  2. **"Reuse List"** — `Colors.primary` background, `Colors.onPrimary` text/icon, full-width pill
+  3. **"Clear N checked items"** — destructive style (see Destructive CTAs below)
+- **Success toast** fires after "Add ingredients to pantry" — same style and animation as the recipe detail toast (see Success Toast pattern below)
 
 ### 4. Saved Recipes
-- A collection of all right-swiped recipes
-- Users can view full recipe details from here
-- Grid cards use `Radius.r200` (8px) — tighter rounding than the default card shape
+- A collection of all right-swiped recipes grouped by cuisine category
+- Each category with ≥1 saved recipe renders as a named section (category heading + horizontal scroll row of cards)
+- The page scrolls vertically; each category row scrolls independently and horizontally
+- Category order follows `CATEGORIES` from `constants/mockRecipes.ts` (minus `'All'`)
+- Cards are `160 × 248px` (`Radius.r300`), portrait ratio, with the same gradient overlay and title style as swipe cards
 
 ### 5. Onboarding
 - 3-slide first-launch flow shown only once (persisted via `AsyncStorage` key `'onboarding_complete'`)
@@ -133,7 +141,8 @@ The signature shape language uses oversized rounding. Avoid `r100` in main UI. `
 | Token | Value | Usage |
 |-------|-------|-------|
 | `r100` | 4px | Micro elements only — avoid in main UI |
-| `r200` | 8px | Tight card shapes (e.g. saved recipe grid cards), inputs |
+| `r200` | 8px | Tight card shapes, inputs |
+| `r300` | 20px | Medium rounding — saved recipe category row cards |
 | `r400` | 32px | lg (2rem) — cards, containers, section blocks, pantry input |
 | `full` | 9999px | xl pills — chips, pill buttons, tags |
 
@@ -226,8 +235,25 @@ Depth is achieved through **tonal layering** and **ambient shadows** — not div
   - **Medium:** background `#FBA42A`, icon & text `#4C310C`, 2× `MaterialIcons bolt` icons (second has `marginLeft: -5` to overlap)
   - **Hard:** background `#FB2A2A`, icon & text `#FFE2E2`, 3× `MaterialIcons bolt` icons
   - **Serves:** background `#F9B8F5`, icon & text `#4A3849`, people icon (`Ionicons people-outline`), label format `SERVES {n}`
-- **Pantry match badge** (shown only in pantry mode, alongside the standard badges): glassmorphism — `BlurView` `intensity={60}`, `tint="light"`, `backgroundColor: 'rgba(255,255,255,0.30)'`, `borderWidth: 1`, `borderColor: 'rgba(255,255,255,0.30)'`, `overflow: 'hidden'`, white icons and text
+- **Pantry match badge** (shown automatically when pantry has ≥1 item — no manual toggle): positioned absolutely at `top: 20, left: 20` on the card. Renders as a row: glassmorphism badge (`BlurView intensity={60}`, `tint="light"`, `rgba(255,255,255,0.30)` bg + border, white icon/text) followed by a `"Matched Ingredients"` label in `FontFamily.headingSemibold`, `FontSize.bodySmall`, `rgba(255,255,255,0.85)`. The standard badges (cook time, difficulty, serves) remain in the bottom overlay and are unaffected.
 - No divider lines between sections — use `surface` vs `surfaceHigh` containers or 32–48px vertical spacing instead
+
+### Destructive CTAs
+- **No background** — destructive actions (e.g. "Clear All" on pantry, "Clear N checked items" on shopping list) use no container colour
+- Text and icon both use `#D00F0F` (red)
+- Font: `FontFamily.heading` (Clash Grotesk Bold)
+- Layout: icon (`trash-outline`, 16px) + label, centred, `minHeight: 44`
+
+### Success Toast
+Used after actions that add items to another list (e.g. "Add to Shopping List", "Add ingredients to pantry").
+- **Background:** `#D5FB2A` (lime)
+- **Text:** `FontFamily.heading`, `FontSize.bodyBase`, `Colors.primary` (forest green)
+- **Icon:** 36×36px circle, `Colors.primary` background, `checkmark-sharp` icon at 22px in `#D5FB2A`
+- **Layout:** full-width pill (`Radius.full`), `paddingLeft: 24`, `paddingRight: 12`, `paddingVertical: 16`, text `flex: 1`, icon on the right
+- **Animation:** `react-native-reanimated` `useSharedValue(200)` → `withTiming(0, 380ms, Easing.out(Easing.cubic))` on show; `withTiming(200, 300ms, Easing.in(Easing.cubic))` on hide, then `runOnJS(setToast)(null)`
+- **Always mounted** (no conditional render) — translateY drives visibility so the slide-out animation plays before text clears
+- **Positioning on recipe detail screen** (no tab bar): `bottom: insets.bottom + 24`
+- **Positioning inside tab screens** (e.g. Shopping List on Pantry tab): `bottom: 12` — the tab navigator already offsets content above the tab bar, so no extra offset is needed
 
 ### Tab Bar
 - Background: `Colors.surface`

@@ -23,13 +23,18 @@ import {
   UIManager,
   StyleSheet,
 } from 'react-native';
+import ReAnimated, {
+  useSharedValue, useAnimatedStyle, withTiming, runOnJS, Easing,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useShoppingList } from '@/context/ShoppingListContext';
 import type { ShoppingListItem, ShoppingListGroup } from '@/context/ShoppingListContext';
+import { usePantry } from '@/context/PantryContext';
 import { SHOPPING_CATEGORY_ORDER } from '@/utils/ingredientUtils';
 import { Colors, FontFamily, FontSize, Radius, Stroke } from '@/constants/tokens';
+
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -38,9 +43,10 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 // ─── Accordion list card ──────────────────────────────────────────────────────
 
-function ListAccordion({ list }: { list: ShoppingListGroup }) {
-  const { addManualItemToList, toggleItem, removeItem, clearChecked, deleteList, renameList } =
+function ListAccordion({ list, showToast }: { list: ShoppingListGroup; showToast: (msg: string) => void }) {
+  const { addManualItemToList, toggleItem, removeItem, clearChecked, uncheckAll, deleteList, renameList } =
     useShoppingList();
+  const { addItem: addToPantry } = usePantry();
 
   const [expanded, setExpanded] = useState(true);
   const [inputText, setInputText] = useState('');
@@ -248,18 +254,45 @@ function ListAccordion({ list }: { list: ShoppingListGroup }) {
             </View>
           ))}
 
-          {/* Clear checked button */}
+          {/* Basket actions — shown when at least one item is checked */}
           {checkedCount > 0 && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={() => clearChecked(list.id)}
-              accessibilityLabel={`Clear ${checkedCount} checked item${checkedCount !== 1 ? 's' : ''}`}
-            >
-              <Ionicons name="trash-outline" size={16} color={Colors.textSecondary} />
-              <Text style={styles.clearButtonText}>
-                Clear {checkedCount} checked item{checkedCount !== 1 ? 's' : ''}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.listActions}>
+              {/* Add ingredients to pantry — lime */}
+              <TouchableOpacity
+                style={styles.pantryButton}
+                onPress={() => {
+                  const checked = list.items.filter((i) => i.checked);
+                  checked.forEach((i) => addToPantry(i.name));
+                  showToast(`Added ${checked.length} ingredient${checked.length !== 1 ? 's' : ''} to pantry`);
+                }}
+                accessibilityLabel="Add checked items to your pantry"
+              >
+                <Ionicons name="leaf-outline" size={16} color={Colors.primary} />
+                <Text style={styles.pantryButtonText}>Add ingredients to pantry</Text>
+              </TouchableOpacity>
+
+              {/* Reuse List — forest green */}
+              <TouchableOpacity
+                style={styles.reuseButton}
+                onPress={() => uncheckAll(list.id)}
+                accessibilityLabel="Uncheck all items to reuse this list"
+              >
+                <Ionicons name="reload-outline" size={16} color={Colors.onPrimary} />
+                <Text style={styles.reuseButtonText}>Reuse List</Text>
+              </TouchableOpacity>
+
+              {/* Clear checked */}
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => clearChecked(list.id)}
+                accessibilityLabel={`Clear ${checkedCount} checked item${checkedCount !== 1 ? 's' : ''}`}
+              >
+                <Ionicons name="trash-outline" size={16} color='#D00F0F' />
+                <Text style={styles.clearButtonText}>
+                  Clear {checkedCount} checked item{checkedCount !== 1 ? 's' : ''}
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       )}
@@ -318,9 +351,28 @@ function ListAccordion({ list }: { list: ShoppingListGroup }) {
 
 export default function ShoppingList() {
   const { lists, createList } = useShoppingList();
-
   const [modalVisible, setModalVisible] = useState(false);
   const [newListName, setNewListName]   = useState('');
+
+  // ── Pantry-add toast ───────────────────────────────────────────────────────
+  const [toast, setToast]           = useState<string | null>(null);
+  const toastTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTranslateY             = useSharedValue(200);
+  const toastAnimStyle              = useAnimatedStyle(() => ({
+    transform: [{ translateY: toastTranslateY.value }],
+  }));
+
+  const showToast = (message: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(message);
+    toastTranslateY.value = 200;
+    toastTranslateY.value = withTiming(0, { duration: 380, easing: Easing.out(Easing.cubic) });
+    toastTimerRef.current = setTimeout(() => {
+      toastTranslateY.value = withTiming(200, { duration: 300, easing: Easing.in(Easing.cubic) }, () => {
+        runOnJS(setToast)(null);
+      });
+    }, 2500);
+  };
 
   // Card is invisible until the keyboard height is known — then it snaps
   // to the correct position and fades in. No Y-axis movement ever.
@@ -381,7 +433,7 @@ export default function ShoppingList() {
 
         {/* ── Accordion list cards ─────────────────────────────────────────── */}
         {lists.length > 0 ? (
-          lists.map((list) => <ListAccordion key={list.id} list={list} />)
+          lists.map((list) => <ListAccordion key={list.id} list={list} showToast={showToast} />)
         ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="cart-outline" size={64} color={Colors.textSecondary} />
@@ -441,6 +493,18 @@ export default function ShoppingList() {
           </TouchableOpacity>
         </Animated.View>
       </Modal>
+
+      {/* ── Pantry-add toast — always mounted, slides in/out ──────────────── */}
+      <ReAnimated.View
+        style={[styles.toast, { bottom: 12 }, toastAnimStyle]}
+        pointerEvents="none"
+      >
+        <Text style={styles.toastText}>{toast ?? ''}</Text>
+        <View style={styles.toastIcon}>
+          <Ionicons name="checkmark-sharp" size={22} color="#D5FB2A" />
+        </View>
+      </ReAnimated.View>
+
     </View>
   );
 }
@@ -650,25 +714,63 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
+  // ── Basket action buttons ────────────────────────────────────────────────────
+  listActions: {
+    marginTop: 12,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+
+  // "Add ingredients to pantry" — lime background, forest green text
+  pantryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: Radius.full,
+    backgroundColor: '#D5FB2A',
+    gap: 6,
+    minHeight: 44,
+  },
+
+  pantryButtonText: {
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.bodySmall,
+    color: Colors.primary,
+  },
+
+  // "Reuse List" — forest green background, white text
+  reuseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
+    gap: 6,
+    minHeight: 44,
+  },
+
+  reuseButtonText: {
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.bodySmall,
+    color: Colors.onPrimary,
+  },
+
   // ── Clear checked button ─────────────────────────────────────────────────────
   clearButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
-    marginTop: 12,
-    paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.background,
     minHeight: 44,
     gap: 8,
   },
 
   clearButtonText: {
-    fontFamily: FontFamily.body,
+    fontFamily: FontFamily.heading,
     fontSize: FontSize.bodySmall,
-    color: Colors.textSecondary,
+    color: '#D00F0F',
   },
 
   // ── Global empty state ───────────────────────────────────────────────────────
@@ -766,5 +868,41 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.heading,
     fontSize: FontSize.bodyBase,
     color: Colors.onPrimary,
+  },
+
+  // ── Pantry-add toast ────────────────────────────────────────────────────────
+  toast: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D5FB2A',
+    borderRadius: Radius.full,
+    paddingVertical: 16,
+    paddingLeft: 24,
+    paddingRight: 12,
+    shadowColor: '#383834',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.20,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+
+  toastText: {
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.bodyBase,
+    color: Colors.primary,
+    flex: 1,
+  },
+
+  toastIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
   },
 });

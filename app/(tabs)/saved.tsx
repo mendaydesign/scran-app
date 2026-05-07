@@ -1,13 +1,16 @@
-// Saved tab — scrollable 2-column grid of recipes the user has liked.
-// Tapping a card navigates to RecipeDetail (/recipe/[id]) as a Stack screen.
+// Saved tab — recipes grouped by cuisine category.
+// Each category that has ≥1 saved recipe renders as a section:
+//   • Category heading
+//   • Horizontally-scrollable row of recipe cards
+// The whole page scrolls vertically.
 
 import {
+  ScrollView,
   FlatList,
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,16 +19,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
+import { CATEGORIES } from '@/constants/mockRecipes';
 import { Colors, FontFamily, FontSize, FontWeight, Radius } from '@/constants/tokens';
 import type { Recipe } from '@/types/recipe';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
-const SCREEN_PADDING = 16;
-const CARD_GAP = 12;
-const CARD_WIDTH =
-  (Dimensions.get('window').width - SCREEN_PADDING * 2 - CARD_GAP) / 2;
-const CARD_HEIGHT = CARD_WIDTH * 1.5; // portrait ratio
+const CARD_WIDTH  = 160;
+const CARD_HEIGHT = CARD_WIDTH * 1.55; // portrait ratio
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ function formatCookTime(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-// ─── Grid card ────────────────────────────────────────────────────────────────
+// ─── Horizontal card ──────────────────────────────────────────────────────────
 
 function RecipeGridCard({
   recipe,
@@ -46,8 +47,6 @@ function RecipeGridCard({
   onPress: () => void;
 }) {
   return (
-    // Shadow wrapper — overflow:hidden on the inner card clips shadows,
-    // so the ambient shadow must live on a parent with no overflow restriction.
     <View style={styles.cardShadow}>
       <TouchableOpacity
         style={styles.card}
@@ -64,7 +63,7 @@ function RecipeGridCard({
           transition={200}
         />
 
-        {/* Green gradient overlay — matches RecipeCard style */}
+        {/* Green gradient overlay */}
         <LinearGradient
           colors={['rgba(0,75,51,0)', 'rgba(0,75,51,0.40)', 'rgba(0,75,51,0.95)']}
           locations={[0, 0.6, 1]}
@@ -87,14 +86,58 @@ function RecipeGridCard({
   );
 }
 
+// ─── Category section ─────────────────────────────────────────────────────────
+
+function CategorySection({
+  category,
+  recipes,
+  onPress,
+}: {
+  category: string;
+  recipes: Recipe[];
+  onPress: (id: string) => void;
+}) {
+  return (
+    <View style={styles.section}>
+      {/* Section heading */}
+      <Text style={styles.sectionTitle}>{category}</Text>
+
+      {/* Horizontal scroll row */}
+      <FlatList
+        data={recipes}
+        keyExtractor={(item) => item.id}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+        ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+        renderItem={({ item }) => (
+          <RecipeGridCard recipe={item} onPress={() => onPress(item.id)} />
+        )}
+      />
+    </View>
+  );
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function SavedScreen() {
   const { savedRecipes } = useSavedRecipes();
   const router = useRouter();
 
+  // Build ordered list of categories that have ≥1 saved recipe.
+  // CATEGORIES starts with 'All' — skip it; the rest are the cuisine names.
+  const cuisines = CATEGORIES.filter((c) => c !== 'All');
+  const sections = cuisines
+    .map((cat) => ({
+      category: cat,
+      recipes: savedRecipes.filter((r) => r.category === cat),
+    }))
+    .filter((s) => s.recipes.length > 0);
+
+  const navigateTo = (id: string) =>
+    router.push({ pathname: '/recipe/[id]', params: { id } });
+
   return (
-    // edges={['top']} — the tab bar owns the bottom safe area
     <SafeAreaView style={styles.container} edges={['top']}>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -121,26 +164,20 @@ export default function SavedScreen() {
 
       ) : (
 
-        // 2-column recipe grid
-        <FlatList
-          data={savedRecipes}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
+        // Vertically-scrolling list of category sections
+        <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.grid}
-          columnWrapperStyle={styles.gridRow}
-          renderItem={({ item }) => (
-            <RecipeGridCard
-              recipe={item}
-              onPress={() =>
-                router.push({
-                  pathname: '/recipe/[id]',
-                  params: { id: item.id },
-                })
-              }
+          contentContainerStyle={styles.scrollContent}
+        >
+          {sections.map((s) => (
+            <CategorySection
+              key={s.category}
+              category={s.category}
+              recipes={s.recipes}
+              onPress={navigateTo}
             />
-          )}
-        />
+          ))}
+        </ScrollView>
 
       )}
     </SafeAreaView>
@@ -186,7 +223,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 40,
     gap: 12,
-    paddingBottom: 80, // offset so it reads as vertically centred above the tab bar
+    paddingBottom: 80,
   },
 
   emptyTitle: {
@@ -205,24 +242,35 @@ const styles = StyleSheet.create({
     lineHeight: FontSize.bodyBase * 1.4,
   },
 
-  // ── Grid ──────────────────────────────────────────────────────────────────
-  grid: {
-    paddingHorizontal: SCREEN_PADDING,
-    paddingTop: 8,
+  // ── Scroll container ──────────────────────────────────────────────────────
+  scrollContent: {
     paddingBottom: 32,
-    gap: CARD_GAP,
+    gap: 32,
   },
 
-  gridRow: {
-    gap: CARD_GAP,
+  // ── Category section ──────────────────────────────────────────────────────
+  section: {
+    gap: 14,
   },
 
-  // ── Grid card ─────────────────────────────────────────────────────────────
-  // Shadow wrapper: ambient shadow lives here (overflow:hidden below clips it)
+  sectionTitle: {
+    fontFamily: FontFamily.heading,
+    fontSize: FontSize.subheading,
+    fontWeight: FontWeight.bold,
+    color: Colors.textPrimary,
+    paddingHorizontal: 24,
+  },
+
+  // Horizontal card row — leading/trailing padding so cards align with header
+  row: {
+    paddingHorizontal: 24,
+  },
+
+  // ── Card ──────────────────────────────────────────────────────────────────
   cardShadow: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: Radius.r200,
+    borderRadius: Radius.r300,
     shadowColor: '#383834',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.06,
@@ -232,7 +280,7 @@ const styles = StyleSheet.create({
 
   card: {
     flex: 1,
-    borderRadius: Radius.r200,
+    borderRadius: Radius.r300,
     overflow: 'hidden',
     backgroundColor: Colors.surface,
   },

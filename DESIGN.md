@@ -86,7 +86,21 @@ Inspired by the reference image's "Sophisticated" and "Ethical" tags:
 - **Rule:** Absolute prohibition of divider lines. 
 - **Separation:** Use vertical white space (32px or 48px) or alternating background colors (`surface-container-low` vs `surface-container-high`).
 - **Layout:** Use "Graphic Shapes" – experiment with placing images inside `lg` (2rem) rounded containers that clip the content, creating an editorial mask effect.
-- **Saved recipe grid cards** use `Radius.r200` (8px) — a deliberately tighter corner to distinguish the grid context from the full swipe card shape.
+- **Saved recipes** are grouped by cuisine category. Each category renders as a section heading + a horizontally-scrollable row of cards (`160 × 248px`, `Radius.r300` — 20px). This creates a browsable magazine shelf layout rather than a flat grid.
+
+### Destructive Actions
+Destructive CTAs (clear, delete) must never carry a coloured background — the danger signal is communicated through colour alone.
+- Text and icon: `#D00F0F`
+- No background container
+- Font: `FontFamily.heading` (Clash Grotesk Bold) for visual weight without a background
+
+### Success / Confirmation Toast
+A consistent in-app notification pattern for actions that move items between lists.
+- **Background:** `#D5FB2A` (lime) — positive, energetic, on-brand
+- **Text:** `Colors.primary` (forest green) on lime — high contrast, no white
+- **Icon:** forest green circle (`Colors.primary`) with a thick lime `checkmark-sharp` — inverts the button colour logic intentionally
+- **Animation:** slides in from below the screen (`translateY: 200 → 0`) and slides back out before clearing — never just pops on/off
+- **Positioning:** always above the visible navigation, accounting for whether a tab bar is present
 
 ### Modal / Sheet Keyboard Handling
 - Never use `KeyboardAvoidingView` inside a `transparent` Modal on iOS — it causes glitches where the overlay shrinks with the keyboard.
