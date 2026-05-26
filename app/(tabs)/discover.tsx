@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { MOCK_RECIPES, CATEGORIES } from '@/constants/mockRecipes';
-import { Colors, FontFamily, FontSize, FontWeight, Radius, IconSize, Stroke } from '@/constants/tokens';
+import { Colors, FontFamily, FontSize, FontWeight, IconSize, Stroke } from '@/constants/tokens';
 import SwipeStack from '@/components/SwipeStack';
 import CategoryFilter from '@/components/CategoryFilter';
 import { useSavedRecipes } from '@/context/SavedRecipesContext';
@@ -46,12 +46,6 @@ export default function DiscoverScreen() {
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <Text style={styles.appName}>SCRAN</Text>
-        {savedRecipes.length > 0 && (
-          <View style={styles.savedBadge}>
-            <Ionicons name="heart" size={14} color={Colors.textPrimary} />
-            <Text style={styles.savedBadgeText}>{savedRecipes.length}</Text>
-          </View>
-        )}
       </View>
 
       {/* ── Category filter chips ─────────────────────────────────────────── */}
@@ -124,25 +118,6 @@ const styles = StyleSheet.create({
     // Negative letterSpacing clips the last glyph in RN — paddingRight
     // equal to the absolute value restores the missing space.
     paddingRight: 4.8,
-  },
-
-  savedBadge: {
-    position: 'absolute',
-    right: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-
-  savedBadgeText: {
-    fontFamily: FontFamily.heading,
-    fontSize: FontSize.bodySmall,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
   },
 
   stackContainer: {

@@ -6,7 +6,7 @@
 //   Each item:   108.33 × 83px (325 ÷ 3), no padding between items
 //   Active bg:   full item area (108.33 × 83px), border-radius: 50, slides via spring
 
-import { View, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import { useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
@@ -20,7 +20,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
-import { Colors } from '@/constants/tokens';
+import { Colors, FontFamily } from '@/constants/tokens';
+import { useSavedRecipes } from '@/context/SavedRecipesContext';
 
 // ─── Spec constants (from CSS) ────────────────────────────────────────────────
 
@@ -46,8 +47,10 @@ const TAB_ICONS: Record<string, { focused: IoniconName; unfocused: IoniconName }
 // ─── Custom tab bar ───────────────────────────────────────────────────────────
 
 function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const insets     = useSafeAreaInsets();
+  const insets      = useSafeAreaInsets();
   const screenWidth = Dimensions.get('window').width;
+  const { savedRecipes } = useSavedRecipes();
+  const savedCount  = savedRecipes.length;
 
   // The outer container must have a real height so React Navigation correctly
   // offsets screen content upward (pill is absolute inside it).
@@ -129,11 +132,29 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                   descriptors[route.key].options.tabBarAccessibilityLabel
                 }
               >
-                <Ionicons
-                  name={isFocused ? icons.focused : icons.unfocused}
-                  size={28}
-                  color={isFocused ? '#ffffff' : 'rgba(83, 80, 74, 0.5)'}
-                />
+                {route.name === 'saved' && savedCount > 0 ? (
+                  // Focused: filled white heart, forest-green number (dark on white fill)
+                  // Unfocused: outline heart, grey number (against transparent centre)
+                  <View style={styles.heartWrapper}>
+                    <Ionicons
+                      name={isFocused ? 'heart' : 'heart-outline'}
+                      size={28}
+                      color={isFocused ? '#ffffff' : 'rgba(83, 80, 74, 0.5)'}
+                    />
+                    <Text style={[
+                      styles.heartCount,
+                      { color: isFocused ? Colors.primary : 'rgba(83, 80, 74, 0.5)' },
+                    ]}>
+                      {savedCount > 99 ? '99' : savedCount}
+                    </Text>
+                  </View>
+                ) : (
+                  <Ionicons
+                    name={isFocused ? icons.focused : icons.unfocused}
+                    size={28}
+                    color={isFocused ? '#ffffff' : 'rgba(83, 80, 74, 0.5)'}
+                  />
+                )}
               </TouchableOpacity>
             );
           })}
@@ -207,5 +228,23 @@ const styles = StyleSheet.create({
     height: INNER_H,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // Wrapper that stacks the heart icon and count label on the same point
+  heartWrapper: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Count overlaid at the visual centre of the heart glyph
+  heartCount: {
+    position: 'absolute',
+    fontFamily: FontFamily.heading,
+    fontSize: 10,
+    lineHeight: 10,
+    // Nudge down slightly — the heart glyph's centre of mass is below the midpoint
+    marginTop: 3,
   },
 });
