@@ -7,8 +7,9 @@ import data from '../scran_recipes.json';
 import type { Recipe, Difficulty } from '@/types/recipe';
 import { NUTRITION_DATA } from '@/constants/nutritionData';
 
-// Map each recipe ID to its local image asset
-const RECIPE_IMAGES: Record<string, number> = {
+// Map each recipe ID to its local image asset.
+// Exported so RecipesContext can attach images to rows fetched from Supabase.
+export const RECIPE_IMAGES: Record<string, number> = {
   // Asian
   'asian-001': require('../assets/Recipe-images/asian-001.jpg'),
   'asian-002': require('../assets/Recipe-images/asian-002.jpg'),

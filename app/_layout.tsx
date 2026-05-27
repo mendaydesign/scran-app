@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { RecipesProvider } from '@/context/RecipesContext';
 import { SavedRecipesProvider } from '@/context/SavedRecipesContext';
 import { PantryProvider } from '@/context/PantryContext';
 import { ShoppingListProvider } from '@/context/ShoppingListContext';
@@ -41,7 +42,8 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        {/* All context providers wrap everything so state is shared across all tabs. */}
+        {/* RecipesProvider is outermost so SavedRecipesProvider can resolve IDs to full Recipe objects */}
+        <RecipesProvider>
         <SavedRecipesProvider>
           <PantryProvider>
             <ShoppingListProvider>
@@ -53,6 +55,7 @@ export default function RootLayout() {
             </ShoppingListProvider>
           </PantryProvider>
         </SavedRecipesProvider>
+        </RecipesProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

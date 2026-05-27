@@ -8,7 +8,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { MOCK_RECIPES, CATEGORIES } from '@/constants/mockRecipes';
+import { useRecipes } from '@/context/RecipesContext';
 import { Colors, FontFamily, FontSize, FontWeight, IconSize, Stroke } from '@/constants/tokens';
 import SwipeStack from '@/components/SwipeStack';
 import CategoryFilter from '@/components/CategoryFilter';
@@ -18,6 +18,9 @@ import type { Recipe } from '@/types/recipe';
 
 
 export default function DiscoverScreen() {
+  // Recipes from Supabase (falls back to local data while loading or offline)
+  const { recipes, categories } = useRecipes();
+
   // Saved state lives in context — shared with the Saved tab
   const { savedRecipes, saveRecipe } = useSavedRecipes();
 
@@ -29,8 +32,8 @@ export default function DiscoverScreen() {
 
   const displayedRecipes =
     selectedCategory === 'All'
-      ? MOCK_RECIPES
-      : MOCK_RECIPES.filter((r) => r.category === selectedCategory);
+      ? recipes
+      : recipes.filter((r) => r.category === selectedCategory);
 
   // Ref used to trigger programmatic swipes from the ✕ / ♥ buttons
   const triggerSwipeRef = useRef<((direction: 'left' | 'right') => void) | null>(null);
@@ -50,7 +53,7 @@ export default function DiscoverScreen() {
 
       {/* ── Category filter chips ─────────────────────────────────────────── */}
       <CategoryFilter
-        categories={CATEGORIES}
+        categories={categories}
         selected={selectedCategory}
         onSelect={setSelectedCategory}
       />
