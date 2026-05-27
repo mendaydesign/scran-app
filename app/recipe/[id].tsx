@@ -220,18 +220,6 @@ export default function RecipeDetail() {
         ))}
       </View>
 
-      {/* Add to Shopping List — only shown for saved recipes */}
-      {saved && (
-        <TouchableOpacity
-          style={styles.shoppingListButton}
-          onPress={handleAddToShoppingList}
-          accessibilityLabel="Add missing ingredients to shopping list"
-          accessibilityRole="button"
-        >
-          <Ionicons name="cart-outline" size={20} color={Colors.onPrimary} />
-          <Text style={styles.shoppingListButtonText}>Add to Shopping List</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 
@@ -299,7 +287,10 @@ export default function RecipeDetail() {
   return (
     <View style={styles.container}>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={saved && activeTab === 'ingredients' ? { paddingBottom: 120 } : undefined}
+      >
 
         {/* Hero image */}
         <View style={styles.hero}>
@@ -395,6 +386,19 @@ export default function RecipeDetail() {
 
         </View>
       </ScrollView>
+
+      {/* Sticky Add to Shopping List — only for saved recipes on ingredients tab */}
+      {saved && activeTab === 'ingredients' && (
+        <TouchableOpacity
+          style={[styles.shoppingListButton, { position: 'absolute', left: 20, right: 20, bottom: 30 }]}
+          onPress={handleAddToShoppingList}
+          accessibilityLabel="Add missing ingredients to shopping list"
+          accessibilityRole="button"
+        >
+          <Ionicons name="cart-outline" size={20} color={Colors.onPrimary} />
+          <Text style={styles.shoppingListButtonText}>Add to Shopping List</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Toast confirmation — always mounted; translateY drives slide-in/out */}
       <Animated.View

@@ -193,7 +193,6 @@ export default function SwipeStack({
     () =>
       Gesture.Pan()
         .activeOffsetX([-8, 8])
-        .enabled(!isFlipped)
         .onUpdate((e) => {
           translateX.value = e.translationX;
           translateY.value = e.translationY * 0.35;
@@ -222,9 +221,7 @@ export default function SwipeStack({
             swipeProgress.value = withSpring(0, { damping: 20, stiffness: 200 });
           }
         }),
-    // isFlipped is included so the gesture re-evaluates its enabled state
-    // whenever the card is flipped or unflipped.
-    [triggerHaptic, stableHandleSwipeComplete, isFlipped],
+    [triggerHaptic, stableHandleSwipeComplete],
   );
 
   // ── Tap gesture ────────────────────────────────────────────────────────────
@@ -320,8 +317,6 @@ export default function SwipeStack({
     if (!triggerSwipeRef) return;
 
     triggerSwipeRef.current = (direction: 'left' | 'right') => {
-      // Don't fire while the card is flipped — user must flip back first
-      if (isFlippedRef.current) return;
       if (currentIndex >= recipes.length) return;
 
       triggerHaptic();
